@@ -12,6 +12,7 @@ import boardRoutes from './routes/boards'
 import dashboardRoutes from './routes/dashboard'
 import fileRoutes from './routes/files'
 import smsRoutes from './routes/sms'
+import feeRoutes from './routes/fees'
 
 type Bindings = {
   DB: D1Database
@@ -39,6 +40,7 @@ app.route('/api/boards', boardRoutes)
 app.route('/api/dashboard', dashboardRoutes)
 app.route('/api/files', fileRoutes)
 app.route('/api/sms', smsRoutes)
+app.route('/api/fees', feeRoutes)
 
 // Health check
 app.get('/api/health', (c) => {

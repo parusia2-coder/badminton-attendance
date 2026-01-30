@@ -273,6 +273,10 @@ function renderMainLayout() {
             <i class="fas fa-comments w-6"></i>
             <span class="ml-3">게시판</span>
           </a>
+          <a href="#" data-page="fees" class="nav-item flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-won-sign w-6"></i>
+            <span class="ml-3">회비관리</span>
+          </a>
         </nav>
         
         <div class="absolute bottom-0 w-64 p-6">
@@ -365,6 +369,11 @@ async function renderCurrentPage() {
       await loadBoards();
       contentDiv.innerHTML = renderBoardsPage();
       attachBoardsHandlers();
+      break;
+    case 'fees':
+      await loadFees();
+      contentDiv.innerHTML = renderFeesPage();
+      attachFeesHandlers();
       break;
   }
 }
@@ -3106,6 +3115,554 @@ async function sendSMS() {
     const errorMsg = error.response?.data?.error || '문자 발송에 실패했습니다';
     showToast(errorMsg, 'error');
   }
+}
+
+// ========== 회비관리 기능 ==========
+
+// 회비 데이터 로드
+async function loadFees() {
+  try {
+    const currentYear = new Date().getFullYear();
+    
+    // 회비 통계
+    const statsResponse = await axios.get(`${API_BASE}/fees/stats?year=${currentYear}`);
+    app.data.feeStats = statsResponse.data;
+    
+    // 회비 납부 내역
+    const paymentsResponse = await axios.get(`${API_BASE}/fees/payments?year=${currentYear}`);
+    app.data.feePayments = paymentsResponse.data.payments;
+    
+    // 회비 설정
+    const settingsResponse = await axios.get(`${API_BASE}/fees/settings/${currentYear}`);
+    app.data.feeSetting = settingsResponse.data;
+    
+  } catch (error) {
+    console.error('회비 데이터 로드 오류:', error);
+    app.data.feeStats = null;
+    app.data.feePayments = [];
+    app.data.feeSetting = { year: new Date().getFullYear(), amount: 50000 };
+  }
+}
+
+// 회비관리 페이지 렌더링
+function renderFeesPage() {
+  const stats = app.data.feeStats;
+  const setting = app.data.feeSetting;
+  
+  if (!stats) return '<div class="text-center py-20">데이터를 불러오는 중...</div>';
+  
+  const currentYear = new Date().getFullYear();
+  
+  return `
+    <div class="space-y-6">
+      <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">회비관리 (${currentYear}년)</h1>
+        <div class="flex gap-2">
+          <button onclick="showFeeSettingModal()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+            <i class="fas fa-cog mr-2"></i>회비 설정
+          </button>
+          <button onclick="showPayFeeModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i>납부 등록
+          </button>
+          <button onclick="sendUnpaidSMS()" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
+            <i class="fas fa-comment-dots mr-2"></i>미납자 문자발송
+          </button>
+        </div>
+      </div>
+      
+      <!-- 통계 카드 -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">총 회원</p>
+              <p class="text-3xl font-bold text-gray-800">${stats.totalMembers}명</p>
+            </div>
+            <i class="fas fa-users text-4xl text-blue-500"></i>
+          </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">납부 회원</p>
+              <p class="text-3xl font-bold text-green-600">${stats.paidMembers}명</p>
+            </div>
+            <i class="fas fa-check-circle text-4xl text-green-500"></i>
+          </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">미납 회원</p>
+              <p class="text-3xl font-bold text-red-600">${stats.unpaidCount}명</p>
+            </div>
+            <i class="fas fa-exclamation-circle text-4xl text-red-500"></i>
+          </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">납부율</p>
+              <p class="text-3xl font-bold text-purple-600">${stats.paymentRate}%</p>
+            </div>
+            <i class="fas fa-chart-pie text-4xl text-purple-500"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 탭 -->
+      <div class="bg-white rounded-lg shadow-md">
+        <div class="border-b">
+          <div class="flex">
+            <button onclick="switchFeeTab('payments')" id="tabPayments" class="px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600">
+              납부 내역
+            </button>
+            <button onclick="switchFeeTab('unpaid')" id="tabUnpaid" class="px-6 py-3 font-semibold text-gray-500 hover:text-gray-700">
+              미납자 목록 (${stats.unpaidCount}명)
+            </button>
+            <button onclick="switchFeeTab('clubs')" id="tabClubs" class="px-6 py-3 font-semibold text-gray-500 hover:text-gray-700">
+              클럽별 현황
+            </button>
+          </div>
+        </div>
+        
+        <div id="feeTabContent" class="p-6">
+          ${renderFeePaymentsTab()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFeePaymentsTab() {
+  const payments = app.data.feePayments || [];
+  
+  if (payments.length === 0) {
+    return '<div class="text-center py-12 text-gray-500">등록된 납부 내역이 없습니다</div>';
+  }
+  
+  return `
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">회원명</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">클럽</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">납부일</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">금액</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">메모</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          ${payments.map(p => `
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${p.member_name}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600">${p.member_club}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600">${p.payment_date}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-900 font-semibold">${p.amount.toLocaleString()}원</td>
+              <td class="px-6 py-4 text-gray-600">${p.note || '-'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button onclick="deleteFeePayment(${p.id})" class="text-red-600 hover:text-red-800">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderUnpaidTab() {
+  const unpaidMembers = app.data.feeStats?.unpaidMembers || [];
+  
+  if (unpaidMembers.length === 0) {
+    return '<div class="text-center py-12 text-green-600 text-lg font-semibold">🎉 모든 회원이 회비를 납부했습니다!</div>';
+  }
+  
+  return `
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">회원명</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">성별</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">클럽</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">급수</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">연락처</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          ${unpaidMembers.map(m => `
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${m.name}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600">${m.gender}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600">${m.club}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-3 py-1 text-xs font-semibold rounded-full ${getGradeBadgeColor(m.grade)}">
+                  ${m.grade}급
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600">${m.phone}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button onclick="payFeeForMember(${m.id})" class="text-blue-600 hover:text-blue-800">
+                  <i class="fas fa-plus mr-1"></i>납부 등록
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderClubsTab() {
+  const byClub = app.data.feeStats?.byClub || [];
+  
+  return `
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      ${byClub.map(club => {
+        const rate = club.total_members > 0 
+          ? Math.round(club.paid_members / club.total_members * 100) 
+          : 0;
+        return `
+          <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">${club.club}</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-600">전체 회원</span>
+                <span class="font-semibold">${club.total_members}명</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">납부 회원</span>
+                <span class="font-semibold text-green-600">${club.paid_members}명</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">미납 회원</span>
+                <span class="font-semibold text-red-600">${club.total_members - club.paid_members}명</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">납부율</span>
+                <span class="font-semibold text-purple-600">${rate}%</span>
+              </div>
+              <div class="flex justify-between border-t pt-3">
+                <span class="text-gray-600">총 납부액</span>
+                <span class="font-bold text-blue-600">${club.total_amount.toLocaleString()}원</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// 탭 전환
+function switchFeeTab(tab) {
+  // 탭 버튼 스타일 업데이트
+  document.querySelectorAll('[id^="tab"]').forEach(btn => {
+    btn.classList.remove('border-blue-600', 'text-blue-600');
+    btn.classList.add('text-gray-500');
+  });
+  
+  const tabBtn = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+  if (tabBtn) {
+    tabBtn.classList.add('border-blue-600', 'text-blue-600');
+    tabBtn.classList.remove('text-gray-500');
+  }
+  
+  // 탭 컨텐츠 업데이트
+  const content = document.getElementById('feeTabContent');
+  if (tab === 'payments') {
+    content.innerHTML = renderFeePaymentsTab();
+  } else if (tab === 'unpaid') {
+    content.innerHTML = renderUnpaidTab();
+  } else if (tab === 'clubs') {
+    content.innerHTML = renderClubsTab();
+  }
+}
+
+// 회비 납부 등록 모달
+function showPayFeeModal(memberId = null) {
+  const currentYear = new Date().getFullYear();
+  const todayDate = new Date().toISOString().split('T')[0];
+  const setting = app.data.feeSetting;
+  
+  let memberSelect = '';
+  if (!memberId) {
+    const members = app.data.members || [];
+    memberSelect = `
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">
+          회원 선택 <span class="text-red-500">*</span>
+        </label>
+        <select id="feePaymentMemberId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          <option value="">회원을 선택하세요</option>
+          ${members.map(m => `<option value="${m.id}">${m.name} (${m.club})</option>`).join('')}
+        </select>
+      </div>
+    `;
+  } else {
+    memberSelect = `<input type="hidden" id="feePaymentMemberId" value="${memberId}">`;
+  }
+  
+  const modalContainer = document.getElementById('modalContainer');
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div class="bg-blue-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+          <h2 class="text-xl font-bold">회비 납부 등록</h2>
+          <button onclick="closeModal()" class="text-white hover:text-gray-200">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="p-6 space-y-4">
+          ${memberSelect}
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">년도</label>
+              <input type="number" id="feePaymentYear" value="${currentYear}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">금액</label>
+              <input type="number" id="feePaymentAmount" value="${setting?.amount || 50000}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">납부일</label>
+            <input type="date" id="feePaymentDate" value="${todayDate}" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">메모 (선택)</label>
+            <textarea id="feePaymentNote" rows="3" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="예: 현금 납부, 계좌이체 등"></textarea>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end gap-3">
+          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
+            취소
+          </button>
+          <button onclick="processFeePayment()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+            등록
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  modalContainer.classList.remove('hidden');
+  modalContainer.classList.add('flex');
+}
+
+// 특정 회원 회비 납부 등록
+function payFeeForMember(memberId) {
+  // 회원 데이터가 없으면 먼저 로드
+  if (!app.data.members || app.data.members.length === 0) {
+    loadMembers().then(() => showPayFeeModal(memberId));
+  } else {
+    showPayFeeModal(memberId);
+  }
+}
+
+// 회비 납부 처리
+async function processFeePayment() {
+  const memberId = document.getElementById('feePaymentMemberId').value;
+  const year = parseInt(document.getElementById('feePaymentYear').value);
+  const amount = parseInt(document.getElementById('feePaymentAmount').value);
+  const paymentDate = document.getElementById('feePaymentDate').value;
+  const note = document.getElementById('feePaymentNote').value.trim();
+  
+  if (!memberId) {
+    showToast('회원을 선택해주세요', 'error');
+    return;
+  }
+  
+  if (!amount || amount <= 0) {
+    showToast('올바른 금액을 입력해주세요', 'error');
+    return;
+  }
+  
+  try {
+    await axios.post(`${API_BASE}/fees/payments`, {
+      memberId: parseInt(memberId),
+      year,
+      amount,
+      paymentDate,
+      note: note || null
+    });
+    
+    showToast('회비 납부가 등록되었습니다', 'success');
+    closeModal();
+    await loadFees();
+    document.getElementById('pageContent').innerHTML = renderFeesPage();
+    attachFeesHandlers();
+  } catch (error) {
+    console.error('회비 납부 등록 오류:', error);
+    showToast(error.response?.data?.error || '회비 납부 등록 실패', 'error');
+  }
+}
+
+// 회비 납부 삭제
+async function deleteFeePayment(id) {
+  if (!confirm('이 납부 내역을 삭제하시겠습니까?')) return;
+  
+  try {
+    await axios.delete(`${API_BASE}/fees/payments/${id}`);
+    showToast('납부 내역이 삭제되었습니다', 'success');
+    await loadFees();
+    document.getElementById('pageContent').innerHTML = renderFeesPage();
+    attachFeesHandlers();
+  } catch (error) {
+    console.error('납부 내역 삭제 오류:', error);
+    showToast('납부 내역 삭제 실패', 'error');
+  }
+}
+
+// 회비 설정 모달
+function showFeeSettingModal() {
+  const currentYear = new Date().getFullYear();
+  const setting = app.data.feeSetting || {};
+  
+  const modalContainer = document.getElementById('modalContainer');
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div class="bg-purple-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+          <h2 class="text-xl font-bold">회비 설정</h2>
+          <button onclick="closeModal()" class="text-white hover:text-gray-200">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">회비 년도</label>
+            <input type="number" id="feeSettingYear" value="${setting.year || currentYear}" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">연회비 금액</label>
+            <input type="number" id="feeSettingAmount" value="${setting.amount || 50000}" step="10000"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">설명 (선택)</label>
+            <textarea id="feeSettingDescription" rows="3" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      placeholder="예: 2026년 연회비">${setting.description || ''}</textarea>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end gap-3">
+          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
+            취소
+          </button>
+          <button onclick="saveFeeSetting()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  modalContainer.classList.remove('hidden');
+  modalContainer.classList.add('flex');
+}
+
+// 회비 설정 저장
+async function saveFeeSetting() {
+  const year = parseInt(document.getElementById('feeSettingYear').value);
+  const amount = parseInt(document.getElementById('feeSettingAmount').value);
+  const description = document.getElementById('feeSettingDescription').value.trim();
+  
+  if (!year || year < 2020 || year > 2100) {
+    showToast('올바른 년도를 입력해주세요', 'error');
+    return;
+  }
+  
+  if (!amount || amount <= 0) {
+    showToast('올바른 금액을 입력해주세요', 'error');
+    return;
+  }
+  
+  try {
+    await axios.post(`${API_BASE}/fees/settings`, {
+      year,
+      amount,
+      description: description || null
+    });
+    
+    showToast('회비 설정이 저장되었습니다', 'success');
+    closeModal();
+    await loadFees();
+    document.getElementById('pageContent').innerHTML = renderFeesPage();
+    attachFeesHandlers();
+  } catch (error) {
+    console.error('회비 설정 저장 오류:', error);
+    showToast('회비 설정 저장 실패', 'error');
+  }
+}
+
+// 미납자 문자 발송
+async function sendUnpaidSMS() {
+  const unpaidMembers = app.data.feeStats?.unpaidMembers || [];
+  
+  if (unpaidMembers.length === 0) {
+    showToast('미납자가 없습니다', 'info');
+    return;
+  }
+  
+  const currentYear = new Date().getFullYear();
+  const setting = app.data.feeSetting || { amount: 50000 };
+  
+  const recipients = unpaidMembers.map(m => m.phone);
+  const message = `[안양시배드민턴연합회]
+${currentYear}년도 연회비 납부 안내드립니다.
+
+납부 금액: ${setting.amount.toLocaleString()}원
+계좌번호: [계좌번호]
+
+빠른 납부 부탁드립니다.
+감사합니다.`;
+  
+  if (!confirm(`미납자 ${unpaidMembers.length}명에게 문자를 발송하시겠습니까?`)) {
+    return;
+  }
+  
+  try {
+    const response = await axios.post(`${API_BASE}/sms/send`, {
+      recipients,
+      message
+    });
+    
+    showToast(response.data.message || `${unpaidMembers.length}명에게 문자가 발송되었습니다`, 'success');
+  } catch (error) {
+    console.error('문자 발송 오류:', error);
+    showToast(error.response?.data?.error || '문자 발송 실패', 'error');
+  }
+}
+
+// 회비관리 핸들러 연결
+function attachFeesHandlers() {
+  // 별도 핸들러가 필요하면 여기 추가
 }
 
 // 페이지 로드 시 초기화
