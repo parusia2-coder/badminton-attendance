@@ -2572,6 +2572,9 @@ async function viewPost(boardId, postId) {
                 <i class="fas fa-list mr-2"></i>목록
               </button>
               <div class="flex gap-2">
+                <button onclick="showEditPostModal(${boardId}, ${postId})" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                  <i class="fas fa-edit mr-2"></i>수정
+                </button>
                 <button onclick="deletePost(${boardId}, ${postId})" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
                   <i class="fas fa-trash mr-2"></i>삭제
                 </button>
@@ -2585,6 +2588,171 @@ async function viewPost(boardId, postId) {
     }, 100);
   } catch (error) {
     showToast('게시글 조회 실패', 'error');
+  }
+}
+
+// 게시글 수정 모달
+async function showEditPostModal(boardId, postId) {
+  try {
+    const response = await axios.get(`${API_BASE}/boards/${boardId}/posts/${postId}`);
+    const post = response.data.post;
+    const attachments = response.data.attachments || [];
+    
+    closeModal();
+    
+    setTimeout(() => {
+      const modal = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div class="bg-white rounded-lg p-6 w-full max-w-3xl my-8">
+            <h2 class="text-2xl font-bold mb-6">게시글 수정</h2>
+            
+            <form id="editPostForm" class="space-y-4">
+              <div>
+                <label class="flex items-center mb-2">
+                  <input type="checkbox" name="is_notice" ${post.is_notice ? 'checked' : ''} class="mr-2">
+                  <span class="text-sm font-medium">공지사항으로 등록</span>
+                </label>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium mb-2">제목 *</label>
+                <input 
+                  type="text" 
+                  name="title" 
+                  value="${post.title}" 
+                  required 
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium mb-2">작성자 *</label>
+                <input 
+                  type="text" 
+                  name="author" 
+                  value="${post.author}" 
+                  required 
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium mb-2">내용 *</label>
+                <textarea 
+                  name="content" 
+                  rows="12" 
+                  required 
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                >${post.content}</textarea>
+              </div>
+              
+              ${attachments.length > 0 ? `
+                <div class="mb-4">
+                  <label class="block text-sm font-medium mb-2">기존 첨부파일</label>
+                  <div class="space-y-2">
+                    ${attachments.map(file => `
+                      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div class="flex items-center">
+                          <i class="fas fa-file ${getFileIcon(file.file_type)} text-xl mr-3"></i>
+                          <div>
+                            <p class="font-medium text-gray-800">${file.file_name}</p>
+                            <p class="text-sm text-gray-500">${(file.file_size / 1024).toFixed(1)}KB</p>
+                          </div>
+                        </div>
+                        <button 
+                          type="button"
+                          onclick="deleteAttachment(${file.id})"
+                          class="text-red-600 hover:text-red-800"
+                        >
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <div>
+                <label class="block text-sm font-medium mb-2">새 파일 추가</label>
+                <input 
+                  type="file" 
+                  id="editPostFiles" 
+                  multiple 
+                  accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx"
+                  class="w-full px-4 py-2 border rounded-lg"
+                >
+                <p class="text-xs text-gray-500 mt-1">이미지, PDF, Word, Excel 파일 (최대 10MB)</p>
+              </div>
+              
+              <div class="flex justify-end gap-2 mt-6">
+                <button type="button" onclick="viewPost(${boardId}, ${postId})" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                  취소
+                </button>
+                <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                  <i class="fas fa-save mr-2"></i>저장
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('modalContainer').innerHTML = modal;
+      
+      // 폼 제출 이벤트
+      document.getElementById('editPostForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        // 게시글 정보 업데이트
+        const postData = {
+          title: formData.get('title'),
+          author: formData.get('author'),
+          content: formData.get('content'),
+          is_notice: formData.get('is_notice') ? 1 : 0
+        };
+        
+        try {
+          // 게시글 업데이트
+          await axios.put(\`\${API_BASE}/boards/\${boardId}/posts/\${postId}\`, postData);
+          
+          // 새 파일 업로드
+          const files = document.getElementById('editPostFiles').files;
+          if (files.length > 0) {
+            for (let file of files) {
+              const fileFormData = new FormData();
+              fileFormData.append('file', file);
+              fileFormData.append('post_id', postId);
+              
+              await axios.post(\`\${API_BASE}/files/upload\`, fileFormData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+              });
+            }
+          }
+          
+          showToast('게시글이 수정되었습니다', 'success');
+          await viewPost(boardId, postId);
+        } catch (error) {
+          showToast('게시글 수정 실패', 'error');
+        }
+      });
+    }, 100);
+  } catch (error) {
+    showToast('게시글 조회 실패', 'error');
+  }
+}
+
+// 첨부파일 삭제
+async function deleteAttachment(attachmentId) {
+  if (!confirm('이 파일을 삭제하시겠습니까?')) return;
+  
+  try {
+    await axios.delete(\`\${API_BASE}/files/\${attachmentId}\`);
+    showToast('파일이 삭제되었습니다', 'success');
+    // 모달 새로고침 필요 - 현재 boardId와 postId를 알아야 함
+    location.reload(); // 임시 해결책
+  } catch (error) {
+    showToast('파일 삭제 실패', 'error');
   }
 }
 

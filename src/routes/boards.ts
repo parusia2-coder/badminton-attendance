@@ -167,11 +167,11 @@ app.post('/:boardId/posts', async (c) => {
 app.put('/:boardId/posts/:postId', async (c) => {
   try {
     const postId = c.req.param('postId')
-    const { title, content, is_notice } = await c.req.json()
+    const { title, content, author, is_notice } = await c.req.json()
     
     await c.env.DB.prepare(
-      'UPDATE posts SET title = ?, content = ?, is_notice = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(title, content, is_notice, postId).run()
+      'UPDATE posts SET title = ?, content = ?, author = ?, is_notice = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(title, content, author, is_notice, postId).run()
     
     return c.json({ message: '게시글이 수정되었습니다' })
   } catch (error) {
