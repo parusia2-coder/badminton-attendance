@@ -3208,6 +3208,11 @@ async function loadFees() {
   try {
     const currentYear = new Date().getFullYear();
     
+    // 회원 데이터가 없으면 로드 (납부 등록 시 필요)
+    if (!app.data.members || app.data.members.length === 0) {
+      await loadMembers();
+    }
+    
     // 회비 통계
     const statsResponse = await axios.get(`${API_BASE}/fees/stats?year=${currentYear}`);
     app.data.feeStats = statsResponse.data;
@@ -3238,82 +3243,82 @@ function renderFeesPage() {
   const currentYear = new Date().getFullYear();
   
   return `
-    <div class="space-y-6">
-      <div class="flex justify-between items-center">
-        <h1 class="text-3xl font-bold text-gray-800">회비관리 (${currentYear}년)</h1>
-        <div class="flex gap-2">
-          <button onclick="showFeeSettingModal()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-            <i class="fas fa-cog mr-2"></i>회비 설정
+    <div class="space-y-4 md:space-y-6">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">회비관리 (${currentYear}년)</h1>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button onclick="showFeeSettingModal()" class="bg-purple-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-purple-700 text-sm md:text-base">
+            <i class="fas fa-cog mr-1 md:mr-2"></i>회비 설정
           </button>
-          <button onclick="showPayFeeModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-            <i class="fas fa-plus mr-2"></i>납부 등록
+          <button onclick="showPayFeeModal()" class="bg-blue-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm md:text-base">
+            <i class="fas fa-plus mr-1 md:mr-2"></i>납부 등록
           </button>
-          <button onclick="sendUnpaidSMS()" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
-            <i class="fas fa-comment-dots mr-2"></i>미납자 문자발송
+          <button onclick="sendUnpaidSMS()" class="bg-orange-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-orange-700 text-sm md:text-base">
+            <i class="fas fa-comment-dots mr-1 md:mr-2"></i>미납자 문자발송
           </button>
         </div>
       </div>
       
       <!-- 통계 카드 -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-white p-6 rounded-lg shadow-md">
-          <div class="flex items-center justify-between">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+        <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <p class="text-gray-500 text-sm">총 회원</p>
-              <p class="text-3xl font-bold text-gray-800">${stats.totalMembers}명</p>
+              <p class="text-gray-500 text-xs md:text-sm">총 회원</p>
+              <p class="text-2xl md:text-3xl font-bold text-gray-800">${stats.totalMembers}명</p>
             </div>
-            <i class="fas fa-users text-4xl text-blue-500"></i>
+            <i class="fas fa-users text-2xl md:text-4xl text-blue-500 hidden md:block"></i>
           </div>
         </div>
         
-        <div class="bg-white p-6 rounded-lg shadow-md">
-          <div class="flex items-center justify-between">
+        <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <p class="text-gray-500 text-sm">납부 회원</p>
-              <p class="text-3xl font-bold text-green-600">${stats.paidMembers}명</p>
+              <p class="text-gray-500 text-xs md:text-sm">납부 회원</p>
+              <p class="text-2xl md:text-3xl font-bold text-green-600">${stats.paidMembers}명</p>
             </div>
-            <i class="fas fa-check-circle text-4xl text-green-500"></i>
+            <i class="fas fa-check-circle text-2xl md:text-4xl text-green-500 hidden md:block"></i>
           </div>
         </div>
         
-        <div class="bg-white p-6 rounded-lg shadow-md">
-          <div class="flex items-center justify-between">
+        <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <p class="text-gray-500 text-sm">미납 회원</p>
-              <p class="text-3xl font-bold text-red-600">${stats.unpaidCount}명</p>
+              <p class="text-gray-500 text-xs md:text-sm">미납 회원</p>
+              <p class="text-2xl md:text-3xl font-bold text-red-600">${stats.unpaidCount}명</p>
             </div>
-            <i class="fas fa-exclamation-circle text-4xl text-red-500"></i>
+            <i class="fas fa-exclamation-circle text-2xl md:text-4xl text-red-500 hidden md:block"></i>
           </div>
         </div>
         
-        <div class="bg-white p-6 rounded-lg shadow-md">
-          <div class="flex items-center justify-between">
+        <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <p class="text-gray-500 text-sm">납부율</p>
-              <p class="text-3xl font-bold text-purple-600">${stats.paymentRate}%</p>
+              <p class="text-gray-500 text-xs md:text-sm">납부율</p>
+              <p class="text-2xl md:text-3xl font-bold text-purple-600">${stats.paymentRate}%</p>
             </div>
-            <i class="fas fa-chart-pie text-4xl text-purple-500"></i>
+            <i class="fas fa-chart-pie text-2xl md:text-4xl text-purple-500 hidden md:block"></i>
           </div>
         </div>
       </div>
       
       <!-- 탭 -->
       <div class="bg-white rounded-lg shadow-md">
-        <div class="border-b">
-          <div class="flex">
-            <button onclick="switchFeeTab('payments')" id="tabPayments" class="px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600">
+        <div class="border-b overflow-x-auto">
+          <div class="flex min-w-max">
+            <button onclick="switchFeeTab('payments')" id="tabPayments" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold border-b-2 border-blue-600 text-blue-600 text-sm md:text-base whitespace-nowrap">
               납부 내역
             </button>
-            <button onclick="switchFeeTab('unpaid')" id="tabUnpaid" class="px-6 py-3 font-semibold text-gray-500 hover:text-gray-700">
+            <button onclick="switchFeeTab('unpaid')" id="tabUnpaid" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold text-gray-500 hover:text-gray-700 text-sm md:text-base whitespace-nowrap">
               미납자 목록 (${stats.unpaidCount}명)
             </button>
-            <button onclick="switchFeeTab('clubs')" id="tabClubs" class="px-6 py-3 font-semibold text-gray-500 hover:text-gray-700">
+            <button onclick="switchFeeTab('clubs')" id="tabClubs" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold text-gray-500 hover:text-gray-700 text-sm md:text-base whitespace-nowrap">
               클럽별 현황
             </button>
           </div>
         </div>
         
-        <div id="feeTabContent" class="p-6">
+        <div id="feeTabContent" class="p-4 md:p-6">
           ${renderFeePaymentsTab()}
         </div>
       </div>
@@ -3746,7 +3751,34 @@ ${currentYear}년도 연회비 납부 안내드립니다.
 
 // 회비관리 핸들러 연결
 function attachFeesHandlers() {
-  // 별도 핸들러가 필요하면 여기 추가
+  // 탭 전환 기능 추가
+  window.switchFeeTab = function(tab) {
+    // 탭 버튼 스타일 변경
+    document.querySelectorAll('[id^="tab"]').forEach(btn => {
+      btn.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
+      btn.classList.add('text-gray-500');
+    });
+    
+    const activeTab = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+    if (activeTab) {
+      activeTab.classList.remove('text-gray-500');
+      activeTab.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
+    }
+    
+    // 탭 컨텐츠 변경
+    const contentDiv = document.getElementById('feeTabContent');
+    switch(tab) {
+      case 'payments':
+        contentDiv.innerHTML = renderFeePaymentsTab();
+        break;
+      case 'unpaid':
+        contentDiv.innerHTML = renderUnpaidTab();
+        break;
+      case 'clubs':
+        contentDiv.innerHTML = renderClubsTab();
+        break;
+    }
+  };
 }
 
 // 페이지 로드 시 초기화
