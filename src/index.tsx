@@ -30,6 +30,9 @@ app.use('/api/*', cors())
 // Static files
 app.use('/static/*', serveStatic({ root: './' }))
 
+// HTML files (debug pages)
+app.use('/*.html', serveStatic({ root: './' }))
+
 // API Routes
 app.route('/api/auth', authRoutes)
 app.route('/api/members', memberRoutes)

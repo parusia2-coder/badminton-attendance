@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회비 기능 디버그</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        .test-box { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #log { background: #000; color: #0f0; padding: 10px; font-family: monospace; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 회비 기능 디버그 테스트</h1>
+    
+    <div class="test-box">
+        <h2>1. 스크립트 로드 확인</h2>
+        <div id="script-check">확인 중...</div>
+    </div>
+    
+    <div class="test-box">
+        <h2>2. 전역 함수 존재 확인</h2>
+        <div id="function-check">확인 중...</div>
+    </div>
+    
+    <div class="test-box">
+        <h2>3. 버튼 테스트</h2>
+        <button onclick="testShowFeeSettingModal()">회비 설정 모달 열기</button>
+        <button onclick="testShowPayFeeModal()">납부 등록 모달 열기</button>
+        <button onclick="testSendUnpaidSMS()">미납자 문자 발송</button>
+    </div>
+    
+    <div class="test-box">
+        <h2>4. 콘솔 로그</h2>
+        <div id="log"></div>
+    </div>
+    
+    <!-- modalContainer -->
+    <div id="modalContainer"></div>
+    
+    <!-- 스크립트 로드 (실제 앱과 동일한 순서) -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/fee-functions.js"></script>
+    
+    <script>
+        // 로그 함수
+        function log(message, isError = false) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const color = isError ? '#f00' : '#0f0';
+            logDiv.innerHTML += `<div style="color: ${color}">[${time}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        // 초기화
+        window.app = {
+            data: {
+                feeSetting: { year: 2026, amount: 50000, description: '2026년 연회비' },
+                members: [
+                    { id: 1, name: '테스트1', club: '부림' },
+                    { id: 2, name: '테스트2', club: '인덕원' }
+                ],
+                feeStats: {
+                    unpaidMembers: [
+                        { id: 3, name: '미납자1', phone: '010-1234-5678' }
+                    ]
+                }
+            }
+        };
+        
+        window.closeModal = function() {
+            document.getElementById('modalContainer').innerHTML = '';
+            document.getElementById('modalContainer').style.display = 'none';
+            log('✅ 모달 닫기 실행됨');
+        };
+        
+        // 1. 스크립트 로드 확인
+        setTimeout(() => {
+            const scriptCheck = document.getElementById('script-check');
+            const scripts = Array.from(document.querySelectorAll('script')).map(s => s.src);
+            const hasFeeScript = scripts.some(s => s.includes('fee-functions.js'));
+            
+            if (hasFeeScript) {
+                scriptCheck.innerHTML = '<span class="success">✅ fee-functions.js 로드됨</span>';
+                scriptCheck.innerHTML += '<br>' + scripts.filter(s => s.includes('fee')).join('<br>');
+                log('✅ fee-functions.js 스크립트 태그 발견');
+            } else {
+                scriptCheck.innerHTML = '<span class="error">❌ fee-functions.js 없음</span>';
+                log('❌ fee-functions.js 스크립트 태그 없음', true);
+            }
+        }, 100);
+        
+        // 2. 함수 존재 확인
+        setTimeout(() => {
+            const functionCheck = document.getElementById('function-check');
+            const functions = {
+                'window.showFeeSettingModal': typeof window.showFeeSettingModal,
+                'window.showPayFeeModal': typeof window.showPayFeeModal,
+                'window.processFeePayment': typeof window.processFeePayment,
+                'window.saveFeeSetting': typeof window.saveFeeSetting,
+                'window.deleteFeePayment': typeof window.deleteFeePayment,
+                'window.sendUnpaidSMS': typeof window.sendUnpaidSMS,
+                'window.payFeeForMember': typeof window.payFeeForMember
+            };
+            
+            let html = '';
+            let allOk = true;
+            for (const [name, type] of Object.entries(functions)) {
+                const isOk = type === 'function';
+                allOk = allOk && isOk;
+                const className = isOk ? 'success' : 'error';
+                const icon = isOk ? '✅' : '❌';
+                html += `<div class="${className}">${icon} ${name}: ${type}</div>`;
+                log(`${icon} ${name}: ${type}`, !isOk);
+            }
+            functionCheck.innerHTML = html;
+            
+            if (allOk) {
+                log('✅ 모든 함수가 정상적으로 등록됨');
+            } else {
+                log('❌ 일부 함수가 등록되지 않음', true);
+            }
+        }, 200);
+        
+        // 3. 테스트 함수들
+        function testShowFeeSettingModal() {
+            log('🔵 회비 설정 모달 테스트 시작');
+            try {
+                if (typeof window.showFeeSettingModal === 'function') {
+                    window.showFeeSettingModal();
+                    log('✅ 회비 설정 모달 호출 성공');
+                    
+                    setTimeout(() => {
+                        const modal = document.getElementById('modalContainer');
+                        if (modal && modal.innerHTML.includes('회비 설정')) {
+                            log('✅ 모달 HTML 생성 확인');
+                        } else {
+                            log('❌ 모달 HTML이 생성되지 않음', true);
+                        }
+                    }, 100);
+                } else {
+                    log('❌ window.showFeeSettingModal이 함수가 아님', true);
+                }
+            } catch (error) {
+                log('❌ 오류: ' + error.message, true);
+            }
+        }
+        
+        function testShowPayFeeModal() {
+            log('🔵 납부 등록 모달 테스트 시작');
+            try {
+                if (typeof window.showPayFeeModal === 'function') {
+                    window.showPayFeeModal();
+                    log('✅ 납부 등록 모달 호출 성공');
+                    
+                    setTimeout(() => {
+                        const modal = document.getElementById('modalContainer');
+                        if (modal && modal.innerHTML.includes('회비 납부')) {
+                            log('✅ 모달 HTML 생성 확인');
+                        } else {
+                            log('❌ 모달 HTML이 생성되지 않음', true);
+                        }
+                    }, 100);
+                } else {
+                    log('❌ window.showPayFeeModal이 함수가 아님', true);
+                }
+            } catch (error) {
+                log('❌ 오류: ' + error.message, true);
+            }
+        }
+        
+        function testSendUnpaidSMS() {
+            log('🔵 미납자 문자 발송 테스트 시작');
+            try {
+                if (typeof window.sendUnpaidSMS === 'function') {
+                    window.sendUnpaidSMS();
+                    log('✅ 미납자 문자 발송 호출 성공');
+                } else {
+                    log('❌ window.sendUnpaidSMS이 함수가 아님', true);
+                }
+            } catch (error) {
+                log('❌ 오류: ' + error.message, true);
+            }
+        }
+        
+        log('🚀 디버그 페이지 초기화 완료');
+    </script>
+</body>
+</html>
