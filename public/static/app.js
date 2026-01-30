@@ -16,22 +16,16 @@ const app = {
 // API 기본 설정
 const API_BASE = '/api';
 
-// 로컬 스토리지에서 세션 확인
+// 로컬 스토리지에서 세션 확인 (간단한 버전)
 async function checkSession() {
   const sessionId = localStorage.getItem('sessionId');
-  if (!sessionId) return false;
+  const sessionName = localStorage.getItem('sessionName');
   
-  try {
-    const response = await axios.post(`${API_BASE}/auth/verify`, { sessionId });
-    if (response.data.valid) {
-      app.session = { sessionId, ...response.data };
-      return true;
-    }
-  } catch (error) {
-    console.error('세션 확인 실패:', error);
+  if (sessionId && sessionName) {
+    app.session = { sessionId, name: sessionName };
+    return true;
   }
   
-  localStorage.removeItem('sessionId');
   return false;
 }
 
@@ -55,6 +49,7 @@ async function login(username, password) {
     const response = await axios.post(`${API_BASE}/auth/login`, { username, password });
     app.session = response.data;
     localStorage.setItem('sessionId', response.data.sessionId);
+    localStorage.setItem('sessionName', response.data.name);
     app.currentPage = 'dashboard';
     await loadDashboard();
     renderApp();
@@ -73,6 +68,7 @@ async function logout() {
   }
   
   localStorage.removeItem('sessionId');
+  localStorage.removeItem('sessionName');
   app.session = null;
   app.currentPage = 'login';
   renderApp();
