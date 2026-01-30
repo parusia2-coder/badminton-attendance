@@ -10,9 +10,11 @@ import attendanceRoutes from './routes/attendances'
 import inventoryRoutes from './routes/inventory'
 import boardRoutes from './routes/boards'
 import dashboardRoutes from './routes/dashboard'
+import fileRoutes from './routes/files'
 
 type Bindings = {
   DB: D1Database
+  R2: R2Bucket
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -31,6 +33,7 @@ app.route('/api/attendances', attendanceRoutes)
 app.route('/api/inventory', inventoryRoutes)
 app.route('/api/boards', boardRoutes)
 app.route('/api/dashboard', dashboardRoutes)
+app.route('/api/files', fileRoutes)
 
 // Health check
 app.get('/api/health', (c) => {

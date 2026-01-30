@@ -1820,6 +1820,31 @@ function showAddPostModal(boardId) {
               <label class="block text-sm font-medium mb-2">작성자 *</label>
               <input type="text" name="author" required value="${app.session.name}" class="w-full px-4 py-2 border rounded-lg">
             </div>
+            
+            <!-- 파일 첨부 -->
+            <div>
+              <label class="block text-sm font-medium mb-2">파일 첨부</label>
+              <div class="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <input 
+                  type="file" 
+                  id="fileInput" 
+                  multiple 
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" 
+                  class="hidden"
+                  onchange="handleFileSelect(event)"
+                />
+                <button 
+                  type="button" 
+                  onclick="document.getElementById('fileInput').click()"
+                  class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg transition"
+                >
+                  <i class="fas fa-cloud-upload-alt mr-2"></i>
+                  파일 선택 (최대 10MB, 이미지/문서)
+                </button>
+                <div id="fileList" class="mt-3 space-y-2"></div>
+              </div>
+            </div>
+            
             <div>
               <label class="flex items-center">
                 <input type="checkbox" name="is_notice" value="1" class="mr-2">
@@ -1837,11 +1862,18 @@ function showAddPostModal(boardId) {
     
     document.getElementById('modalContainer').innerHTML = modal;
     
+    // 파일 선택된 파일들을 저장할 배열
+    window.selectedFiles = [];
+    
     document.getElementById('addPostForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
       const formData = new FormData(e.target);
       const data = Object.fromEntries(formData);
       data.is_notice = data.is_notice ? 1 : 0;
+      
+      // 업로드된 파일 정보 추가
+      data.attachments = window.selectedFiles;
       
       try {
         await axios.post(`${API_BASE}/boards/${boardId}/posts`, data);
@@ -1854,10 +1886,87 @@ function showAddPostModal(boardId) {
   }, 100);
 }
 
+// 파일 선택 핸들러
+async function handleFileSelect(event) {
+  const files = Array.from(event.target.files);
+  const fileListDiv = document.getElementById('fileList');
+  
+  for (const file of files) {
+    // 파일 크기 체크 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showToast(`${file.name}은(는) 10MB를 초과합니다`, 'error');
+      continue;
+    }
+    
+    // 파일 업로드
+    showToast(`${file.name} 업로드 중...`, 'info');
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await axios.post(`${API_BASE}/files/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      if (response.data.success) {
+        const fileInfo = response.data.file;
+        window.selectedFiles.push(fileInfo);
+        
+        // 파일 목록에 추가
+        const fileItem = document.createElement('div');
+        fileItem.className = 'flex items-center justify-between p-2 bg-green-50 rounded border border-green-200';
+        fileItem.innerHTML = `
+          <div class="flex items-center flex-1">
+            <i class="fas fa-file text-green-600 mr-2"></i>
+            <span class="text-sm text-gray-700">${fileInfo.name}</span>
+            <span class="text-xs text-gray-500 ml-2">(${(fileInfo.size / 1024).toFixed(1)}KB)</span>
+          </div>
+          <button 
+            type="button" 
+            onclick="removeFile('${fileInfo.r2Key}')"
+            class="text-red-600 hover:text-red-800"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        fileListDiv.appendChild(fileItem);
+        
+        showToast(`${file.name} 업로드 완료`, 'success');
+      }
+    } catch (error) {
+      showToast(`${file.name} 업로드 실패`, 'error');
+    }
+  }
+  
+  // 파일 입력 초기화
+  event.target.value = '';
+}
+
+// 파일 제거
+function removeFile(r2Key) {
+  window.selectedFiles = window.selectedFiles.filter(f => f.r2Key !== r2Key);
+  
+  // UI에서 제거
+  const fileListDiv = document.getElementById('fileList');
+  const fileItems = fileListDiv.children;
+  for (let i = 0; i < fileItems.length; i++) {
+    if (fileItems[i].querySelector('button').getAttribute('onclick').includes(r2Key)) {
+      fileItems[i].remove();
+      break;
+    }
+  }
+  
+  showToast('파일이 제거되었습니다', 'info');
+}
+
 async function viewPost(boardId, postId) {
   try {
     const response = await axios.get(`${API_BASE}/boards/${boardId}/posts/${postId}`);
     const post = response.data.post;
+    const attachments = response.data.attachments || [];
     
     closeModal();
     
@@ -1886,6 +1995,35 @@ async function viewPost(boardId, postId) {
               ${post.content}
             </div>
             
+            ${attachments.length > 0 ? `
+              <div class="mb-6">
+                <h3 class="text-lg font-bold mb-3">
+                  <i class="fas fa-paperclip mr-2"></i>
+                  첨부파일 (${attachments.length})
+                </h3>
+                <div class="space-y-2">
+                  ${attachments.map(file => `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                      <div class="flex items-center flex-1">
+                        <i class="fas fa-file ${getFileIcon(file.file_type)} text-2xl mr-3"></i>
+                        <div>
+                          <p class="font-medium text-gray-800">${file.file_name}</p>
+                          <p class="text-sm text-gray-500">${(file.file_size / 1024).toFixed(1)}KB</p>
+                        </div>
+                      </div>
+                      <a 
+                        href="${API_BASE}/files/download/${encodeURIComponent(file.r2_key)}" 
+                        target="_blank"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        <i class="fas fa-download mr-2"></i>다운로드
+                      </a>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+            
             <div class="flex justify-between">
               <button onclick="viewBoardPosts(${boardId})" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
                 <i class="fas fa-list mr-2"></i>목록
@@ -1905,6 +2043,20 @@ async function viewPost(boardId, postId) {
   } catch (error) {
     showToast('게시글 조회 실패', 'error');
   }
+}
+
+// 파일 타입에 따른 아이콘
+function getFileIcon(fileType) {
+  if (fileType.startsWith('image/')) {
+    return 'text-blue-600';
+  } else if (fileType === 'application/pdf') {
+    return 'text-red-600';
+  } else if (fileType.includes('word')) {
+    return 'text-blue-800';
+  } else if (fileType.includes('excel') || fileType.includes('sheet')) {
+    return 'text-green-600';
+  }
+  return 'text-gray-600';
 }
 
 async function deletePost(boardId, postId) {

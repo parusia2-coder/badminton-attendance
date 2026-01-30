@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 
 type Bindings = {
   DB: D1Database
+  R2: R2Bucket
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -121,7 +122,12 @@ app.get('/:boardId/posts/:postId', async (c) => {
       return c.json({ error: '게시글을 찾을 수 없습니다' }, 404)
     }
     
-    return c.json({ post })
+    // 첨부파일 조회
+    const { results: attachments } = await c.env.DB.prepare(
+      'SELECT * FROM attachments WHERE post_id = ?'
+    ).bind(postId).all()
+    
+    return c.json({ post, attachments })
   } catch (error) {
     return c.json({ error: '게시글 조회 중 오류가 발생했습니다' }, 500)
   }
@@ -131,15 +137,26 @@ app.get('/:boardId/posts/:postId', async (c) => {
 app.post('/:boardId/posts', async (c) => {
   try {
     const boardId = c.req.param('boardId')
-    const { title, content, author, is_notice } = await c.req.json()
+    const { title, content, author, is_notice, attachments } = await c.req.json()
     
     const result = await c.env.DB.prepare(
       'INSERT INTO posts (board_id, title, content, author, is_notice) VALUES (?, ?, ?, ?, ?)'
     ).bind(boardId, title, content, author, is_notice || 0).run()
     
+    const postId = result.meta.last_row_id
+    
+    // 첨부파일 정보 저장
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      for (const attachment of attachments) {
+        await c.env.DB.prepare(
+          'INSERT INTO attachments (post_id, file_name, file_size, file_type, r2_key) VALUES (?, ?, ?, ?, ?)'
+        ).bind(postId, attachment.name, attachment.size, attachment.type, attachment.r2Key).run()
+      }
+    }
+    
     return c.json({ 
       message: '게시글이 작성되었습니다', 
-      id: result.meta.last_row_id 
+      id: postId 
     }, 201)
   } catch (error) {
     return c.json({ error: '게시글 작성 중 오류가 발생했습니다' }, 500)
