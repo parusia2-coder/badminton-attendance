@@ -2714,7 +2714,7 @@ async function showEditPostModal(boardId, postId) {
         
         try {
           // 게시글 업데이트
-          await axios.put(\`\${API_BASE}/boards/\${boardId}/posts/\${postId}\`, postData);
+          await axios.put(`${API_BASE}/boards/${boardId}/posts/${postId}`, postData);
           
           // 새 파일 업로드
           const files = document.getElementById('editPostFiles').files;
@@ -2724,7 +2724,7 @@ async function showEditPostModal(boardId, postId) {
               fileFormData.append('file', file);
               fileFormData.append('post_id', postId);
               
-              await axios.post(\`\${API_BASE}/files/upload\`, fileFormData, {
+              await axios.post(`${API_BASE}/files/upload`, fileFormData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
               });
             }
@@ -2747,7 +2747,7 @@ async function deleteAttachment(attachmentId) {
   if (!confirm('이 파일을 삭제하시겠습니까?')) return;
   
   try {
-    await axios.delete(\`\${API_BASE}/files/\${attachmentId}\`);
+    await axios.delete(`${API_BASE}/files/${attachmentId}`);
     showToast('파일이 삭제되었습니다', 'success');
     // 모달 새로고침 필요 - 현재 boardId와 postId를 알아야 함
     location.reload(); // 임시 해결책
