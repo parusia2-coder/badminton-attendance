@@ -792,6 +792,191 @@ function showAddMemberModal() {
   });
 }
 
+// 회원 상세보기 모달
+function showMemberDetail(memberId) {
+  const member = app.data.members.find(m => m.id === memberId);
+  if (!member) {
+    showToast('회원 정보를 찾을 수 없습니다', 'error');
+    return;
+  }
+  
+  const modal = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-800">회원 상세정보</h2>
+          <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500 mb-1">이름</p>
+              <p class="text-lg font-semibold text-gray-900">${member.name}</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500 mb-1">성별</p>
+              <p class="text-lg font-semibold text-gray-900">${member.gender}</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500 mb-1">출생년도</p>
+              <p class="text-lg font-semibold text-gray-900">${member.birth_year}년</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500 mb-1">클럽</p>
+              <p class="text-lg font-semibold text-gray-900">${member.club}</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500 mb-1">급수</p>
+              <p class="text-lg font-semibold">
+                <span class="px-3 py-1 text-sm rounded-full ${getGradeBadgeColor(member.grade)}">
+                  ${member.grade}급
+                </span>
+              </p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500 mb-1">연락처</p>
+              <p class="text-lg font-semibold text-gray-900">${member.phone}</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500 mb-1">회비 납부 여부</p>
+              <p class="text-lg font-semibold">
+                <span class="px-3 py-1 text-sm rounded-full ${member.fee_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                  ${member.fee_paid ? '납부 완료' : '미납'}
+                </span>
+              </p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500 mb-1">차량 등록 여부</p>
+              <p class="text-lg font-semibold">
+                <span class="px-3 py-1 text-sm rounded-full ${member.car_registered ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
+                  ${member.car_registered ? '등록됨' : '미등록'}
+                </span>
+              </p>
+            </div>
+          </div>
+          
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-500 mb-1">등록일시</p>
+            <p class="text-sm text-gray-700">${dayjs(member.created_at).format('YYYY-MM-DD HH:mm')}</p>
+          </div>
+          
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-500 mb-1">최종 수정일시</p>
+            <p class="text-sm text-gray-700">${dayjs(member.updated_at).format('YYYY-MM-DD HH:mm')}</p>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-2 mt-6">
+          <button onclick="closeModal()" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">닫기</button>
+          <button onclick="closeModal(); showEditMemberModal(${member.id})" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <i class="fas fa-edit mr-2"></i>수정하기
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('modalContainer').innerHTML = modal;
+}
+
+// 회원 수정 모달
+function showEditMemberModal(memberId) {
+  const member = app.data.members.find(m => m.id === memberId);
+  if (!member) {
+    showToast('회원 정보를 찾을 수 없습니다', 'error');
+    return;
+  }
+  
+  const modal = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <h2 class="text-2xl font-bold mb-6">회원 정보 수정</h2>
+        <form id="editMemberForm" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">이름 *</label>
+              <input type="text" name="name" value="${member.name}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">성별 *</label>
+              <select name="gender" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="남" ${member.gender === '남' ? 'selected' : ''}>남</option>
+                <option value="여" ${member.gender === '여' ? 'selected' : ''}>여</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">출생년도 *</label>
+              <input type="number" name="birth_year" value="${member.birth_year}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">클럽 *</label>
+              <input type="text" name="club" value="${member.club}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">급수 *</label>
+              <select name="grade" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="S" ${member.grade === 'S' ? 'selected' : ''}>S급</option>
+                <option value="A" ${member.grade === 'A' ? 'selected' : ''}>A급</option>
+                <option value="B" ${member.grade === 'B' ? 'selected' : ''}>B급</option>
+                <option value="C" ${member.grade === 'C' ? 'selected' : ''}>C급</option>
+                <option value="D" ${member.grade === 'D' ? 'selected' : ''}>D급</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">연락처 *</label>
+              <input type="tel" name="phone" value="${member.phone}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">회비 납부 여부</label>
+              <select name="fee_paid" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="0" ${member.fee_paid === 0 ? 'selected' : ''}>미납</option>
+                <option value="1" ${member.fee_paid === 1 ? 'selected' : ''}>납부</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">차량 등록 여부</label>
+              <select name="car_registered" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="0" ${member.car_registered === 0 ? 'selected' : ''}>미등록</option>
+                <option value="1" ${member.car_registered === 1 ? 'selected' : ''}>등록</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="button" onclick="closeModal()" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">취소</button>
+            <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <i class="fas fa-save mr-2"></i>저장
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('modalContainer').innerHTML = modal;
+  
+  document.getElementById('editMemberForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    data.birth_year = parseInt(data.birth_year);
+    data.fee_paid = parseInt(data.fee_paid);
+    data.car_registered = parseInt(data.car_registered);
+    
+    try {
+      await axios.put(`${API_BASE}/members/${memberId}`, data);
+      showToast('회원 정보가 수정되었습니다', 'success');
+      closeModal();
+      await loadMembers();
+      document.getElementById('membersTableBody').innerHTML = renderMembersTable();
+    } catch (error) {
+      showToast('회원 정보 수정 실패', 'error');
+    }
+  });
+}
+
 function showBulkUploadModal() {
   const modal = `
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
