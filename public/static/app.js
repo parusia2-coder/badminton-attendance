@@ -560,6 +560,9 @@ function renderMembersPage() {
           <button onclick="exportMembers()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
             <i class="fas fa-download mr-2"></i>엑셀 내보내기
           </button>
+          <button onclick="showDeleteAllMembersConfirm()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+            <i class="fas fa-trash-alt mr-2"></i>전체 삭제
+          </button>
         </div>
       </div>
       
@@ -903,6 +906,97 @@ async function deleteMember(id) {
     document.getElementById('membersTableBody').innerHTML = renderMembersTable();
   } catch (error) {
     showToast('회원 삭제 실패', 'error');
+  }
+}
+
+// 전체 회원 삭제 확인 모달
+function showDeleteAllMembersConfirm() {
+  const totalMembers = app.data.members.length;
+  
+  if (totalMembers === 0) {
+    showToast('삭제할 회원이 없습니다', 'info');
+    return;
+  }
+  
+  const modal = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <div class="text-center mb-6">
+          <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+            <i class="fas fa-exclamation-triangle text-3xl text-red-600"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">전체 회원 삭제</h2>
+          <p class="text-gray-600">정말로 <strong class="text-red-600">모든 회원(${totalMembers}명)</strong>을 삭제하시겠습니까?</p>
+        </div>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-yellow-400"></i>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-yellow-700">
+                <strong>경고:</strong> 이 작업은 되돌릴 수 없습니다!
+              </p>
+              <ul class="mt-2 text-sm text-yellow-700 list-disc list-inside">
+                <li>모든 회원 정보가 삭제됩니다</li>
+                <li>회비 납부 내역도 함께 삭제됩니다</li>
+                <li>출석 기록도 함께 삭제됩니다</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            확인을 위해 <strong>"전체삭제"</strong>를 입력하세요:
+          </label>
+          <input 
+            type="text" 
+            id="deleteConfirmText" 
+            placeholder="전체삭제"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+          />
+        </div>
+        
+        <div class="flex gap-3">
+          <button 
+            onclick="closeModal()" 
+            class="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold"
+          >
+            취소
+          </button>
+          <button 
+            onclick="confirmDeleteAllMembers()" 
+            class="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold"
+          >
+            삭제 확인
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('modalContainer').innerHTML = modal;
+}
+
+// 전체 회원 삭제 실행
+async function confirmDeleteAllMembers() {
+  const confirmText = document.getElementById('deleteConfirmText').value;
+  
+  if (confirmText !== '전체삭제') {
+    showToast('확인 문구를 정확히 입력해주세요', 'warning');
+    return;
+  }
+  
+  try {
+    await axios.delete(`${API_BASE}/members`);
+    showToast('전체 회원이 삭제되었습니다', 'success');
+    closeModal();
+    await loadMembers();
+    document.getElementById('membersTableBody').innerHTML = renderMembersTable();
+  } catch (error) {
+    showToast('전체 회원 삭제 실패', 'error');
   }
 }
 
