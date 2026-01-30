@@ -3747,20 +3747,7 @@ ${currentYear}년도 연회비 납부 안내드립니다.
 
 // 회비관리 핸들러 연결
 function attachFeesHandlers() {
-  // 회비 설정 모달 함수를 전역으로 노출
-  window.showFeeSettingModal = showFeeSettingModal;
-  window.saveFeeSetting = saveFeeSetting;
-  
-  // 납부 등록 모달 함수를 전역으로 노출
-  window.showPayFeeModal = showPayFeeModal;
-  window.payFeeForMember = payFeeForMember;
-  window.processFeePayment = processFeePayment;
-  window.deleteFeePayment = deleteFeePayment;
-  
-  // 미납자 문자발송 함수를 전역으로 노출
-  window.sendUnpaidSMS = sendUnpaidSMS;
-  
-  // 탭 전환 기능
+  // 탭 전환 기능만 정의 (다른 함수들은 이미 전역으로 정의됨)
   window.switchFeeTab = function(tab) {
     // 탭 버튼 스타일 변경
     document.querySelectorAll('[id^="tab"]').forEach(btn => {

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fee Test</title>
+</head>
+<body>
+    <h1>Fee Functions Test</h1>
+    <button onclick="testFunctions()">Test Functions</button>
+    <div id="result"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        function testFunctions() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<h2>Testing...</h2>';
+            
+            const tests = [];
+            tests.push(`window.showFeeSettingModal: ${typeof window.showFeeSettingModal}`);
+            tests.push(`window.showPayFeeModal: ${typeof window.showPayFeeModal}`);
+            tests.push(`window.processFeePayment: ${typeof window.processFeePayment}`);
+            tests.push(`window.saveFeeSetting: ${typeof window.saveFeeSetting}`);
+            tests.push(`window.sendUnpaidSMS: ${typeof window.sendUnpaidSMS}`);
+            
+            result.innerHTML = '<pre>' + tests.join('\n') + '</pre>';
+        }
+    </script>
+</body>
+</html>
