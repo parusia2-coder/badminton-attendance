@@ -3474,13 +3474,13 @@ function renderFeesPage() {
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h1 class="text-2xl md:text-3xl font-bold text-gray-800">회비관리 (${currentYear}년)</h1>
         <div class="flex flex-col sm:flex-row gap-2">
-          <button onclick="showFeeSettingModal()" class="bg-purple-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-purple-700 text-sm md:text-base">
+          <button onclick="window.showFeeSettingModal()" class="bg-purple-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-purple-700 text-sm md:text-base">
             <i class="fas fa-cog mr-1 md:mr-2"></i>회비 설정
           </button>
-          <button onclick="showPayFeeModal()" class="bg-blue-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm md:text-base">
+          <button onclick="window.showPayFeeModal()" class="bg-blue-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm md:text-base">
             <i class="fas fa-plus mr-1 md:mr-2"></i>납부 등록
           </button>
-          <button onclick="sendUnpaidSMS()" class="bg-orange-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-orange-700 text-sm md:text-base">
+          <button onclick="window.sendUnpaidSMS()" class="bg-orange-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-orange-700 text-sm md:text-base">
             <i class="fas fa-comment-dots mr-1 md:mr-2"></i>미납자 문자발송
           </button>
         </div>
@@ -3582,7 +3582,7 @@ function renderFeePaymentsTab() {
               <td class="px-6 py-4 whitespace-nowrap text-gray-900 font-semibold">${p.amount.toLocaleString()}원</td>
               <td class="px-6 py-4 text-gray-600">${p.note || '-'}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button onclick="deleteFeePayment(${p.id})" class="text-red-600 hover:text-red-800">
+                <button onclick="window.deleteFeePayment(${p.id})" class="text-red-600 hover:text-red-800">
                   <i class="fas fa-trash"></i>
                 </button>
               </td>
@@ -3627,7 +3627,7 @@ function renderUnpaidTab() {
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-600">${m.phone}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button onclick="payFeeForMember(${m.id})" class="text-blue-600 hover:text-blue-800">
+                <button onclick="window.payFeeForMember(${m.id})" class="text-blue-600 hover:text-blue-800">
                   <i class="fas fa-plus mr-1"></i>납부 등록
                 </button>
               </td>
