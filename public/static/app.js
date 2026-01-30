@@ -242,7 +242,7 @@ function renderMainLayout() {
   return `
     <div class="flex h-screen bg-gray-100">
       <!-- 사이드바 -->
-      <aside id="sidebar" class="sidebar w-64 bg-white shadow-lg transition-transform duration-300">
+      <aside id="sidebar" class="sidebar w-64 bg-white shadow-lg transition-transform duration-300 fixed lg:static inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0">
         <div class="p-6 bg-gradient-to-r from-blue-600 to-purple-600">
           <h1 class="text-white text-xl font-bold">장년부 관리시스템</h1>
           <p class="text-blue-100 text-sm mt-1">${app.session.name}님</p>
@@ -287,6 +287,9 @@ function renderMainLayout() {
         </div>
       </aside>
       
+      <!-- Overlay for mobile -->
+      <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+      
       <!-- 메인 컨텐츠 -->
       <main class="flex-1 overflow-auto">
         <!-- 모바일 헤더 -->
@@ -322,9 +325,30 @@ function attachMainHandlers() {
   
   // 모바일 메뉴 토글
   const menuToggle = document.getElementById('menuToggle');
-  if (menuToggle) {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  
+  if (menuToggle && sidebar && overlay) {
+    // 햄버거 버튼 클릭
     menuToggle.addEventListener('click', () => {
-      document.getElementById('sidebar').classList.toggle('hidden');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    });
+    
+    // 오버레이 클릭 시 메뉴 닫기
+    overlay.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+    });
+    
+    // 메뉴 항목 클릭 시 모바일에서 자동으로 닫기
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        if (window.innerWidth < 1024) {
+          sidebar.classList.add('-translate-x-full');
+          overlay.classList.add('hidden');
+        }
+      });
     });
   }
   

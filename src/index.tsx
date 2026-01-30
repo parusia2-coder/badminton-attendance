@@ -60,9 +60,22 @@ app.get('/', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
           body { font-family: 'Noto Sans KR', sans-serif; }
-          .sidebar { transition: transform 0.3s ease; }
-          @media (max-width: 768px) {
-            .sidebar.hidden { transform: translateX(-100%); }
+          /* Prevent horizontal scroll on mobile */
+          body, html { overflow-x: hidden; }
+          
+          /* Sidebar smooth transitions */
+          .sidebar { 
+            transition: transform 0.3s ease-in-out;
+          }
+          
+          /* Overlay smooth fade */
+          #sidebarOverlay {
+            transition: opacity 0.3s ease-in-out;
+          }
+          
+          #sidebarOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
           }
         </style>
     </head>
