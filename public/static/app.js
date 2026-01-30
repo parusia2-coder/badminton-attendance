@@ -16,6 +16,237 @@ const app = {
 // API 기본 설정
 const API_BASE = '/api';
 
+// ========================================
+// 회비 관리 전역 함수들 (모든 페이지에서 사용 가능)
+// ========================================
+
+// 회비 설정 모달 열기
+window.showFeeSettingModal = function() {
+  const currentYear = new Date().getFullYear();
+  const setting = app.data.feeSetting || {};
+  const modalContainer = document.getElementById('modalContainer');
+  if (!modalContainer) return;
+  
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div class="bg-purple-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+          <h2 class="text-xl font-bold">회비 설정</h2>
+          <button onclick="closeModal()" class="text-white hover:text-gray-200">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">회비 년도</label>
+            <input type="number" id="feeSettingYear" value="${setting.year || currentYear}" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">연회비 금액</label>
+            <input type="number" id="feeSettingAmount" value="${setting.amount || 50000}" step="10000"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">설명 (선택)</label>
+            <textarea id="feeSettingDescription" rows="3" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      placeholder="예: 2026년 연회비">${setting.description || ''}</textarea>
+          </div>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end gap-3">
+          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">취소</button>
+          <button onclick="window.saveFeeSetting()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">저장</button>
+        </div>
+      </div>
+    </div>
+  `;
+  modalContainer.classList.remove('hidden');
+  modalContainer.classList.add('flex');
+};
+
+// 회비 설정 저장
+window.saveFeeSetting = async function() {
+  const year = parseInt(document.getElementById('feeSettingYear').value);
+  const amount = parseInt(document.getElementById('feeSettingAmount').value);
+  const description = document.getElementById('feeSettingDescription').value.trim();
+  
+  if (!year || year < 2020 || year > 2100) {
+    showToast('올바른 년도를 입력해주세요', 'error');
+    return;
+  }
+  if (!amount || amount <= 0) {
+    showToast('올바른 금액을 입력해주세요', 'error');
+    return;
+  }
+  
+  try {
+    await axios.post(`${API_BASE}/fees/settings`, { year, amount, description: description || null });
+    showToast('회비 설정이 저장되었습니다', 'success');
+    closeModal();
+    await loadFees();
+    document.getElementById('pageContent').innerHTML = renderFeesPage();
+    attachFeesHandlers();
+  } catch (error) {
+    console.error('회비 설정 저장 오류:', error);
+    showToast('회비 설정 저장 실패', 'error');
+  }
+};
+
+// 납부 등록 모달 열기
+window.showPayFeeModal = function(memberId = null) {
+  const currentYear = new Date().getFullYear();
+  const todayDate = new Date().toISOString().split('T')[0];
+  const setting = app.data.feeSetting;
+  const modalContainer = document.getElementById('modalContainer');
+  if (!modalContainer) return;
+  
+  let memberSelect = '';
+  if (!memberId) {
+    const members = app.data.members || [];
+    memberSelect = `
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">회원 선택 <span class="text-red-500">*</span></label>
+        <select id="feePaymentMemberId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          <option value="">회원을 선택하세요</option>
+          ${members.map(m => `<option value="${m.id}">${m.name} (${m.club})</option>`).join('')}
+        </select>
+      </div>
+    `;
+  } else {
+    memberSelect = `<input type="hidden" id="feePaymentMemberId" value="${memberId}">`;
+  }
+  
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div class="bg-blue-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+          <h2 class="text-xl font-bold">회비 납부 등록</h2>
+          <button onclick="closeModal()" class="text-white hover:text-gray-200">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          ${memberSelect}
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">년도</label>
+              <input type="number" id="feePaymentYear" value="${currentYear}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">금액</label>
+              <input type="number" id="feePaymentAmount" value="${setting?.amount || 50000}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">납부일</label>
+            <input type="date" id="feePaymentDate" value="${todayDate}" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">메모 (선택)</label>
+            <textarea id="feePaymentNote" rows="3" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="예: 현금 납부, 계좌이체 등"></textarea>
+          </div>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end gap-3">
+          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">취소</button>
+          <button onclick="window.processFeePayment()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">등록</button>
+        </div>
+      </div>
+    </div>
+  `;
+  modalContainer.classList.remove('hidden');
+  modalContainer.classList.add('flex');
+};
+
+// 회비 납부 처리
+window.processFeePayment = async function() {
+  const memberId = document.getElementById('feePaymentMemberId').value;
+  const year = parseInt(document.getElementById('feePaymentYear').value);
+  const amount = parseInt(document.getElementById('feePaymentAmount').value);
+  const paymentDate = document.getElementById('feePaymentDate').value;
+  const note = document.getElementById('feePaymentNote').value.trim();
+  
+  if (!memberId) {
+    showToast('회원을 선택해주세요', 'error');
+    return;
+  }
+  if (!amount || amount <= 0) {
+    showToast('올바른 금액을 입력해주세요', 'error');
+    return;
+  }
+  
+  try {
+    await axios.post(`${API_BASE}/fees/payments`, {
+      memberId: parseInt(memberId), year, amount, paymentDate, note: note || null
+    });
+    showToast('회비 납부가 등록되었습니다', 'success');
+    closeModal();
+    await loadFees();
+    document.getElementById('pageContent').innerHTML = renderFeesPage();
+    attachFeesHandlers();
+  } catch (error) {
+    console.error('회비 납부 등록 오류:', error);
+    showToast(error.response?.data?.error || '회비 납부 등록 실패', 'error');
+  }
+};
+
+// 미납자 문자 발송
+window.sendUnpaidSMS = async function() {
+  const unpaidMembers = app.data.feeStats?.unpaidMembers || [];
+  if (unpaidMembers.length === 0) {
+    showToast('미납자가 없습니다', 'info');
+    return;
+  }
+  
+  const currentYear = new Date().getFullYear();
+  const setting = app.data.feeSetting || { amount: 50000 };
+  const recipients = unpaidMembers.map(m => m.phone);
+  const message = `[안양시배드민턴연합회]\n${currentYear}년도 연회비 납부 안내드립니다.\n\n납부 금액: ${setting.amount.toLocaleString()}원\n계좌번호: [계좌번호]\n\n빠른 납부 부탁드립니다.\n감사합니다.`;
+  
+  if (!confirm(`미납자 ${unpaidMembers.length}명에게 문자를 발송하시겠습니까?`)) return;
+  
+  try {
+    await axios.post(`${API_BASE}/sms/send`, { phoneNumbers: recipients, message });
+    showToast(`${unpaidMembers.length}명에게 문자가 발송되었습니다`, 'success');
+  } catch (error) {
+    console.error('문자 발송 오류:', error);
+    showToast(error.response?.data?.error || '문자 발송 실패', 'error');
+  }
+};
+
+// 특정 회원 납부 등록
+window.payFeeForMember = function(memberId) {
+  if (!app.data.members || app.data.members.length === 0) {
+    loadMembers().then(() => window.showPayFeeModal(memberId));
+  } else {
+    window.showPayFeeModal(memberId);
+  }
+};
+
+// 납부 내역 삭제
+window.deleteFeePayment = async function(id) {
+  if (!confirm('이 납부 내역을 삭제하시겠습니까?')) return;
+  try {
+    await axios.delete(`${API_BASE}/fees/payments/${id}`);
+    showToast('납부 내역이 삭제되었습니다', 'success');
+    await loadFees();
+    document.getElementById('pageContent').innerHTML = renderFeesPage();
+    attachFeesHandlers();
+  } catch (error) {
+    console.error('납부 내역 삭제 오류:', error);
+    showToast('납부 내역 삭제 실패', 'error');
+  }
+};
+
+// ========================================
+// 일반 함수들
+// ========================================
+
 // 로컬 스토리지에서 세션 확인 (간단한 버전)
 async function checkSession() {
   const sessionId = localStorage.getItem('sessionId');
@@ -3776,273 +4007,6 @@ function attachFeesHandlers() {
     }
   };
 }
-
-// 회비 관련 함수들을 전역으로 노출 (페이지 로드 전에 실행)
-window.showFeeSettingModal = function() {
-  const currentYear = new Date().getFullYear();
-  const setting = app.data.feeSetting || {};
-  
-  const modalContainer = document.getElementById('modalContainer');
-  if (!modalContainer) return;
-  
-  modalContainer.innerHTML = `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div class="bg-purple-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
-          <h2 class="text-xl font-bold">회비 설정</h2>
-          <button onclick="closeModal()" class="text-white hover:text-gray-200">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-        
-        <div class="p-6 space-y-4">
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">회비 년도</label>
-            <input type="number" id="feeSettingYear" value="${setting.year || currentYear}" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">연회비 금액</label>
-            <input type="number" id="feeSettingAmount" value="${setting.amount || 50000}" step="10000"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">설명 (선택)</label>
-            <textarea id="feeSettingDescription" rows="3" 
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                      placeholder="예: 2026년 연회비">${setting.description || ''}</textarea>
-          </div>
-        </div>
-        
-        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end gap-3">
-          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
-            취소
-          </button>
-          <button onclick="window.saveFeeSetting()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
-            저장
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  modalContainer.classList.remove('hidden');
-  modalContainer.classList.add('flex');
-};
-
-window.saveFeeSetting = async function() {
-  const year = parseInt(document.getElementById('feeSettingYear').value);
-  const amount = parseInt(document.getElementById('feeSettingAmount').value);
-  const description = document.getElementById('feeSettingDescription').value.trim();
-  
-  if (!year || year < 2020 || year > 2100) {
-    showToast('올바른 년도를 입력해주세요', 'error');
-    return;
-  }
-  
-  if (!amount || amount <= 0) {
-    showToast('올바른 금액을 입력해주세요', 'error');
-    return;
-  }
-  
-  try {
-    await axios.post(`${API_BASE}/fees/settings`, {
-      year,
-      amount,
-      description: description || null
-    });
-    
-    showToast('회비 설정이 저장되었습니다', 'success');
-    closeModal();
-    await loadFees();
-    document.getElementById('pageContent').innerHTML = renderFeesPage();
-    attachFeesHandlers();
-  } catch (error) {
-    console.error('회비 설정 저장 오류:', error);
-    showToast('회비 설정 저장 실패', 'error');
-  }
-};
-
-window.showPayFeeModal = function(memberId = null) {
-  const currentYear = new Date().getFullYear();
-  const todayDate = new Date().toISOString().split('T')[0];
-  const setting = app.data.feeSetting;
-  const modalContainer = document.getElementById('modalContainer');
-  if (!modalContainer) return;
-  
-  let memberSelect = '';
-  if (!memberId) {
-    const members = app.data.members || [];
-    memberSelect = `
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">
-          회원 선택 <span class="text-red-500">*</span>
-        </label>
-        <select id="feePaymentMemberId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-          <option value="">회원을 선택하세요</option>
-          ${members.map(m => `<option value="${m.id}">${m.name} (${m.club})</option>`).join('')}
-        </select>
-      </div>
-    `;
-  } else {
-    memberSelect = `<input type="hidden" id="feePaymentMemberId" value="${memberId}">`;
-  }
-  
-  modalContainer.innerHTML = `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div class="bg-blue-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
-          <h2 class="text-xl font-bold">회비 납부 등록</h2>
-          <button onclick="closeModal()" class="text-white hover:text-gray-200">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-        
-        <div class="p-6 space-y-4">
-          ${memberSelect}
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">년도</label>
-              <input type="number" id="feePaymentYear" value="${currentYear}" 
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">금액</label>
-              <input type="number" id="feePaymentAmount" value="${setting?.amount || 50000}" 
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">납부일</label>
-            <input type="date" id="feePaymentDate" value="${todayDate}" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">메모 (선택)</label>
-            <textarea id="feePaymentNote" rows="3" 
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="예: 현금 납부, 계좌이체 등"></textarea>
-          </div>
-        </div>
-        
-        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end gap-3">
-          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
-            취소
-          </button>
-          <button onclick="window.processFeePayment()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-            등록
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  modalContainer.classList.remove('hidden');
-  modalContainer.classList.add('flex');
-};
-
-window.processFeePayment = async function() {
-  const memberId = document.getElementById('feePaymentMemberId').value;
-  const year = parseInt(document.getElementById('feePaymentYear').value);
-  const amount = parseInt(document.getElementById('feePaymentAmount').value);
-  const paymentDate = document.getElementById('feePaymentDate').value;
-  const note = document.getElementById('feePaymentNote').value.trim();
-  
-  if (!memberId) {
-    showToast('회원을 선택해주세요', 'error');
-    return;
-  }
-  
-  if (!amount || amount <= 0) {
-    showToast('올바른 금액을 입력해주세요', 'error');
-    return;
-  }
-  
-  try {
-    await axios.post(`${API_BASE}/fees/payments`, {
-      memberId: parseInt(memberId),
-      year,
-      amount,
-      paymentDate,
-      note: note || null
-    });
-    
-    showToast('회비 납부가 등록되었습니다', 'success');
-    closeModal();
-    await loadFees();
-    document.getElementById('pageContent').innerHTML = renderFeesPage();
-    attachFeesHandlers();
-  } catch (error) {
-    console.error('회비 납부 등록 오류:', error);
-    showToast(error.response?.data?.error || '회비 납부 등록 실패', 'error');
-  }
-};
-
-window.payFeeForMember = function(memberId) {
-  if (!app.data.members || app.data.members.length === 0) {
-    loadMembers().then(() => window.showPayFeeModal(memberId));
-  } else {
-    window.showPayFeeModal(memberId);
-  }
-};
-
-window.deleteFeePayment = async function(id) {
-  if (!confirm('이 납부 내역을 삭제하시겠습니까?')) return;
-  
-  try {
-    await axios.delete(`${API_BASE}/fees/payments/${id}`);
-    showToast('납부 내역이 삭제되었습니다', 'success');
-    await loadFees();
-    document.getElementById('pageContent').innerHTML = renderFeesPage();
-    attachFeesHandlers();
-  } catch (error) {
-    console.error('납부 내역 삭제 오류:', error);
-    showToast('납부 내역 삭제 실패', 'error');
-  }
-};
-
-window.sendUnpaidSMS = async function() {
-  const unpaidMembers = app.data.feeStats?.unpaidMembers || [];
-  
-  if (unpaidMembers.length === 0) {
-    showToast('미납자가 없습니다', 'info');
-    return;
-  }
-  
-  const currentYear = new Date().getFullYear();
-  const setting = app.data.feeSetting || { amount: 50000 };
-  
-  const recipients = unpaidMembers.map(m => m.phone);
-  const message = `[안양시배드민턴연합회]
-${currentYear}년도 연회비 납부 안내드립니다.
-
-납부 금액: ${setting.amount.toLocaleString()}원
-계좌번호: [계좌번호]
-
-빠른 납부 부탁드립니다.
-감사합니다.`;
-  
-  if (!confirm(`미납자 ${unpaidMembers.length}명에게 문자를 발송하시겠습니까?`)) {
-    return;
-  }
-  
-  try {
-    await axios.post(`${API_BASE}/sms/send`, {
-      phoneNumbers: recipients,
-      message: message
-    });
-    
-    showToast(`${unpaidMembers.length}명에게 문자가 발송되었습니다`, 'success');
-  } catch (error) {
-    console.error('문자 발송 오류:', error);
-    showToast(error.response?.data?.error || '문자 발송 실패', 'error');
-  }
-};
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
