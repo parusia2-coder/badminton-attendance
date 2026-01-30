@@ -1549,6 +1549,82 @@ function showAddScheduleModal() {
   });
 }
 
+// 일정 수정 모달
+function showEditScheduleModal(scheduleId) {
+  const schedule = app.data.schedules.find(s => s.id === scheduleId);
+  if (!schedule) {
+    showToast('일정을 찾을 수 없습니다', 'error');
+    return;
+  }
+  
+  const modal = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <h2 class="text-2xl font-bold mb-6">일정 수정</h2>
+        <form id="editScheduleForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">제목 *</label>
+            <input type="text" name="title" value="${schedule.title}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">일정 유형 *</label>
+              <select name="schedule_type" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="정기모임" ${schedule.schedule_type === '정기모임' ? 'selected' : ''}>정기모임</option>
+                <option value="특별모임" ${schedule.schedule_type === '특별모임' ? 'selected' : ''}>특별모임</option>
+                <option value="기타" ${schedule.schedule_type === '기타' ? 'selected' : ''}>기타</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">일정 날짜 *</label>
+              <input type="date" name="schedule_date" value="${schedule.schedule_date}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">시작 시간 *</label>
+              <input type="time" name="start_time" value="${schedule.start_time}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">종료 시간 *</label>
+              <input type="time" name="end_time" value="${schedule.end_time}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">장소 *</label>
+            <input type="text" name="location" value="${schedule.location}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">설명</label>
+            <textarea name="description" rows="3" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">${schedule.description || ''}</textarea>
+          </div>
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="button" onclick="closeModal()" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">취소</button>
+            <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <i class="fas fa-save mr-2"></i>저장
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('modalContainer').innerHTML = modal;
+  
+  document.getElementById('editScheduleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    
+    try {
+      await axios.put(`${API_BASE}/schedules/${scheduleId}`, data);
+      showToast('일정이 수정되었습니다', 'success');
+      closeModal();
+      await filterSchedules();
+    } catch (error) {
+      showToast('일정 수정 실패', 'error');
+    }
+  });
+}
+
 function showGenerateRegularModal() {
   const currentYear = new Date().getFullYear();
   
