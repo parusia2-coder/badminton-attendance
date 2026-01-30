@@ -819,7 +819,10 @@ function showBulkUploadModal() {
         <div class="mb-6 p-4 bg-blue-50 rounded-lg">
           <h3 class="font-bold mb-2">엑셀 파일 형식 안내</h3>
           <p class="text-sm text-gray-700 mb-2">첫 번째 행은 헤더로 무시되며, 다음 순서로 데이터를 입력해주세요:</p>
-          <p class="text-sm text-gray-700">이름, 성별, 출생년도, 클럽, 급수, 연락처, 회비납부(0/1), 차량등록(0/1)</p>
+          <p class="text-sm text-gray-700 mb-3">이름, 성별, 출생년도, 클럽, 급수, 연락처, 회비납부(0/1), 차량등록(0/1)</p>
+          <a href="/sample_members.csv" download class="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <i class="fas fa-download mr-2"></i>샘플 CSV 파일 다운로드
+          </a>
         </div>
         
         <!-- 붙여넣기 탭 -->
