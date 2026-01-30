@@ -180,4 +180,14 @@ app.get('/stats/yearly/:year', async (c) => {
   }
 })
 
+// 전체 출석 데이터 삭제 (초기화)
+app.delete('/all', async (c) => {
+  try {
+    await c.env.DB.prepare('DELETE FROM attendances').run()
+    return c.json({ message: '모든 출석 데이터가 삭제되었습니다' })
+  } catch (error) {
+    return c.json({ error: '출석 데이터 삭제 중 오류가 발생했습니다' }, 500)
+  }
+})
+
 export default app
