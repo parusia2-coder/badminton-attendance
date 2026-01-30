@@ -88,6 +88,7 @@ app.get('/', (c) => {
         <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/locale/ko.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script>dayjs.locale('ko');</script>
+        <script src="/static/fee-functions.js?v=${Date.now()}"></script>
         <script src="/static/app.js?v=${Date.now()}"></script>
     </body>
     </html>
