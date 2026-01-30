@@ -1852,15 +1852,20 @@ async function viewAttendance(scheduleId) {
 // 출석관리 페이지
 function renderAttendancePage() {
   return `
-    <div class="space-y-6">
-      <h1 class="text-3xl font-bold text-gray-800">출석관리</h1>
+    <div class="space-y-4 md:space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">출석관리</h1>
+        <button onclick="showAttendanceStats()" class="bg-purple-600 text-white px-4 py-2.5 rounded-lg hover:bg-purple-700 w-full sm:w-auto">
+          <i class="fas fa-chart-bar mr-2"></i>통계 보기
+        </button>
+      </div>
       
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <!-- 일정 선택 -->
         <div class="lg:col-span-1">
-          <div class="bg-white p-6 rounded-lg shadow-md">
-            <h3 class="text-lg font-bold mb-4">일정 선택</h3>
-            <div id="scheduleList" class="space-y-2 max-h-[600px] overflow-y-auto">
+          <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
+            <h3 class="text-base md:text-lg font-bold mb-3 md:mb-4">일정 선택</h3>
+            <div id="scheduleList" class="space-y-2 max-h-[300px] lg:max-h-[600px] overflow-y-auto">
               ${renderScheduleListForAttendance()}
             </div>
           </div>
@@ -1868,15 +1873,10 @@ function renderAttendancePage() {
         
         <!-- 출석 체크 -->
         <div class="lg:col-span-2">
-          <div class="bg-white p-6 rounded-lg shadow-md">
-            <div class="flex justify-between items-center mb-6">
-              <h3 class="text-lg font-bold">출석 체크</h3>
-              <button onclick="showAttendanceStats()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-                <i class="fas fa-chart-bar mr-2"></i>통계 보기
-              </button>
-            </div>
+          <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
+            <h3 class="text-base md:text-lg font-bold mb-3 md:mb-6 lg:hidden">출석 체크</h3>
             <div id="attendanceCheckArea">
-              <p class="text-center text-gray-500 py-12">일정을 선택해주세요</p>
+              <p class="text-center text-gray-500 py-8 md:py-12">일정을 선택해주세요</p>
             </div>
           </div>
         </div>
@@ -1925,51 +1925,25 @@ async function selectScheduleForAttendance(scheduleId) {
     });
     
     const html = `
-      <div class="mb-6 p-4 bg-blue-50 rounded-lg">
-        <h4 class="font-bold text-lg">${schedule.title}</h4>
-        <p class="text-sm text-gray-700">${dayjs(schedule.schedule_date).format('YYYY년 M월 D일 (ddd)')} ${schedule.start_time} - ${schedule.end_time}</p>
-        <p class="text-sm text-gray-700">${schedule.location}</p>
+      <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-50 rounded-lg">
+        <h4 class="font-bold text-base md:text-lg">${schedule.title}</h4>
+        <p class="text-xs md:text-sm text-gray-700">${dayjs(schedule.schedule_date).format('YYYY년 M월 D일 (ddd)')} ${schedule.start_time} - ${schedule.end_time}</p>
+        <p class="text-xs md:text-sm text-gray-700">${schedule.location}</p>
       </div>
       
-      <div class="mb-4 flex justify-between items-center">
-        <p class="text-sm text-gray-600">총 ${members.length}명 중 ${Object.values(attendanceMap).filter(s => s === '출석').length}명 출석</p>
+      <div class="mb-3 md:mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+        <p class="text-sm text-gray-600 font-medium">총 ${members.length}명 중 <span class="text-green-600 font-bold">${Object.values(attendanceMap).filter(s => s === '출석').length}명</span> 출석</p>
         <input 
           type="text" 
           id="attendanceSearch" 
           placeholder="회원 검색" 
-          class="px-4 py-2 border rounded-lg w-64"
+          class="px-3 md:px-4 py-2 border rounded-lg w-full sm:w-64 text-sm md:text-base"
           onkeyup="filterAttendanceMembers()"
         />
       </div>
       
-      <div class="space-y-2 max-h-[500px] overflow-y-auto" id="attendanceMemberList">
-        ${members.map(member => {
-          const status = attendanceMap[member.id] || '결석';
-          return `
-            <div class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 member-attendance-item" data-member-name="${member.name}">
-              <div class="flex items-center flex-1">
-                <div class="flex-1">
-                  <p class="font-semibold">${member.name}</p>
-                  <p class="text-sm text-gray-600">${member.club} / ${member.grade}급</p>
-                </div>
-              </div>
-              <div class="flex gap-2">
-                <button 
-                  onclick="toggleAttendance(${scheduleId}, ${member.id}, '출석')"
-                  class="px-4 py-2 rounded-lg ${status === '출석' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'}"
-                >
-                  출석
-                </button>
-                <button 
-                  onclick="toggleAttendance(${scheduleId}, ${member.id}, '결석')"
-                  class="px-4 py-2 rounded-lg ${status === '결석' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}"
-                >
-                  결석
-                </button>
-              </div>
-            </div>
-          `;
-        }).join('')}
+      <div class="space-y-3 md:space-y-4 max-h-[400px] md:max-h-[500px] overflow-y-auto" id="attendanceMemberList">
+        ${renderAttendanceMembersByClub(members, attendanceMap, scheduleId)}
       </div>
     `;
     
@@ -1984,6 +1958,92 @@ async function selectScheduleForAttendance(scheduleId) {
   } catch (error) {
     console.error('출석 데이터 로드 실패:', error);
     showToast('출석 데이터 로드 실패', 'error');
+  }
+}
+
+// 클럽별로 회원 그룹화하여 렌더링
+function renderAttendanceMembersByClub(members, attendanceMap, scheduleId) {
+  // 클럽별로 회원 그룹화
+  const membersByClub = {};
+  members.forEach(member => {
+    if (!membersByClub[member.club]) {
+      membersByClub[member.club] = [];
+    }
+    membersByClub[member.club].push(member);
+  });
+  
+  // 클럽명 정렬
+  const clubs = Object.keys(membersByClub).sort();
+  
+  return clubs.map(club => {
+    const clubMembers = membersByClub[club];
+    const clubAttendedCount = clubMembers.filter(m => attendanceMap[m.id] === '출석').length;
+    
+    return `
+      <div class="border rounded-lg overflow-hidden club-section">
+        <button 
+          onclick="toggleClubSection('club-${club.replace(/\s+/g, '-')}')"
+          class="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 flex items-center justify-between transition"
+        >
+          <div class="flex items-center gap-2 md:gap-3">
+            <i class="fas fa-users text-blue-600 text-sm md:text-base"></i>
+            <span class="font-bold text-gray-800 text-sm md:text-base">${club}</span>
+            <span class="text-xs md:text-sm text-gray-600">(${clubMembers.length}명)</span>
+          </div>
+          <div class="flex items-center gap-2 md:gap-3">
+            <span class="text-xs md:text-sm font-semibold ${clubAttendedCount > 0 ? 'text-green-600' : 'text-gray-500'}">
+              출석 ${clubAttendedCount}명
+            </span>
+            <i class="fas fa-chevron-down text-gray-500 text-sm club-toggle-icon" id="icon-club-${club.replace(/\s+/g, '-')}"></i>
+          </div>
+        </button>
+        
+        <div class="space-y-2 p-2 md:p-3 bg-white" id="club-${club.replace(/\s+/g, '-')}" style="display: block;">
+          ${clubMembers.map(member => {
+            const status = attendanceMap[member.id] || '결석';
+            return `
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg hover:bg-gray-50 member-attendance-item gap-3" 
+                   data-member-name="${member.name}" data-club="${club}">
+                <div class="flex-1">
+                  <p class="font-semibold text-sm md:text-base">${member.name}</p>
+                  <p class="text-xs md:text-sm text-gray-600">${member.grade}급 · ${member.phone}</p>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                  <button 
+                    onclick="toggleAttendance(${scheduleId}, ${member.id}, '출석')"
+                    class="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2 rounded-lg transition text-sm md:text-base ${status === '출석' ? 'bg-green-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}"
+                  >
+                    <i class="fas fa-check mr-1"></i>출석
+                  </button>
+                  <button 
+                    onclick="toggleAttendance(${scheduleId}, ${member.id}, '결석')"
+                    class="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2 rounded-lg transition text-sm md:text-base ${status === '결석' ? 'bg-red-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}"
+                  >
+                    <i class="fas fa-times mr-1"></i>결석
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 클럽 섹션 토글
+function toggleClubSection(clubId) {
+  const section = document.getElementById(clubId);
+  const icon = document.getElementById(`icon-${clubId}`);
+  
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    icon.classList.remove('fa-chevron-right');
+    icon.classList.add('fa-chevron-down');
+  } else {
+    section.style.display = 'none';
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-right');
   }
 }
 
