@@ -798,13 +798,32 @@ function showBulkUploadModal() {
       <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <h2 class="text-2xl font-bold mb-6">회원 일괄 업로드</h2>
         
+        <!-- 탭 선택 -->
+        <div class="flex border-b mb-6">
+          <button 
+            id="tabPaste" 
+            onclick="switchUploadTab('paste')" 
+            class="px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600"
+          >
+            <i class="fas fa-clipboard mr-2"></i>붙여넣기
+          </button>
+          <button 
+            id="tabFile" 
+            onclick="switchUploadTab('file')" 
+            class="px-6 py-3 font-semibold text-gray-600 hover:text-gray-800"
+          >
+            <i class="fas fa-file-upload mr-2"></i>파일 업로드
+          </button>
+        </div>
+        
         <div class="mb-6 p-4 bg-blue-50 rounded-lg">
           <h3 class="font-bold mb-2">엑셀 파일 형식 안내</h3>
           <p class="text-sm text-gray-700 mb-2">첫 번째 행은 헤더로 무시되며, 다음 순서로 데이터를 입력해주세요:</p>
           <p class="text-sm text-gray-700">이름, 성별, 출생년도, 클럽, 급수, 연락처, 회비납부(0/1), 차량등록(0/1)</p>
         </div>
         
-        <div class="mb-6">
+        <!-- 붙여넣기 탭 -->
+        <div id="pasteTab" class="mb-6">
           <label class="block text-sm font-medium mb-2">CSV/엑셀 데이터 붙여넣기</label>
           <textarea 
             id="bulkData" 
@@ -814,6 +833,56 @@ function showBulkUploadModal() {
 홍길동\t남\t1970\t안양클럽\tA\t010-1234-5678\t1\t1
 김철수\t남\t1975\t평촌클럽\tB\t010-2345-6789\t0\t0"
           ></textarea>
+        </div>
+        
+        <!-- 파일 업로드 탭 -->
+        <div id="fileTab" class="mb-6 hidden">
+          <label class="block text-sm font-medium mb-2">Excel/CSV 파일 선택</label>
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <input 
+              type="file" 
+              id="bulkFileInput" 
+              accept=".csv,.xlsx,.xls" 
+              class="hidden"
+              onchange="handleBulkFileSelect(event)"
+            />
+            <button 
+              type="button" 
+              onclick="document.getElementById('bulkFileInput').click()"
+              class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+            >
+              <i class="fas fa-file-excel mr-2"></i>
+              파일 선택 (.csv, .xlsx, .xls)
+            </button>
+            <p class="text-sm text-gray-500 mt-3">또는 파일을 여기로 드래그하세요</p>
+          </div>
+          
+          <!-- 파일 미리보기 -->
+          <div id="filePreview" class="mt-4 hidden">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-file-excel text-green-600 text-2xl mr-3"></i>
+                  <div>
+                    <p class="font-semibold text-gray-800" id="fileName"></p>
+                    <p class="text-sm text-gray-600" id="fileInfo"></p>
+                  </div>
+                </div>
+                <button 
+                  onclick="clearBulkFile()" 
+                  class="text-red-600 hover:text-red-800"
+                >
+                  <i class="fas fa-times text-xl"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- 데이터 미리보기 -->
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg max-h-64 overflow-auto">
+              <h4 class="font-semibold mb-2">데이터 미리보기 (최대 5행)</h4>
+              <div id="dataPreview" class="text-sm font-mono"></div>
+            </div>
+          </div>
         </div>
         
         <div class="flex justify-end gap-2">
@@ -827,12 +896,120 @@ function showBulkUploadModal() {
   `;
   
   document.getElementById('modalContainer').innerHTML = modal;
+  
+  // 파일 전역 변수 초기화
+  window.bulkFileData = null;
+}
+
+// 탭 전환
+function switchUploadTab(tab) {
+  const pasteTab = document.getElementById('pasteTab');
+  const fileTab = document.getElementById('fileTab');
+  const tabPasteBtn = document.getElementById('tabPaste');
+  const tabFileBtn = document.getElementById('tabFile');
+  
+  if (tab === 'paste') {
+    pasteTab.classList.remove('hidden');
+    fileTab.classList.add('hidden');
+    tabPasteBtn.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
+    tabPasteBtn.classList.remove('text-gray-600');
+    tabFileBtn.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
+    tabFileBtn.classList.add('text-gray-600');
+  } else {
+    pasteTab.classList.add('hidden');
+    fileTab.classList.remove('hidden');
+    tabFileBtn.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
+    tabFileBtn.classList.remove('text-gray-600');
+    tabPasteBtn.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
+    tabPasteBtn.classList.add('text-gray-600');
+  }
+}
+
+// 파일 선택 핸들러
+async function handleBulkFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const fileName = file.name;
+  const fileSize = (file.size / 1024).toFixed(1);
+  const fileExt = fileName.split('.').pop().toLowerCase();
+  
+  // 파일 타입 확인
+  if (!['csv', 'xlsx', 'xls'].includes(fileExt)) {
+    showToast('CSV 또는 Excel 파일만 업로드 가능합니다', 'error');
+    return;
+  }
+  
+  showToast('파일을 읽는 중...', 'info');
+  
+  try {
+    let data = '';
+    
+    if (fileExt === 'csv') {
+      // CSV 파일 읽기
+      data = await readCSVFile(file);
+    } else {
+      // Excel 파일은 CSV로 변환 필요 (간단한 방법: 사용자에게 CSV로 저장 요청)
+      showToast('Excel 파일은 CSV로 저장한 후 업로드해주세요', 'warning');
+      event.target.value = '';
+      return;
+    }
+    
+    // 파일 정보 저장
+    window.bulkFileData = data;
+    
+    // UI 업데이트
+    document.getElementById('fileName').textContent = fileName;
+    document.getElementById('fileInfo').textContent = `${fileSize}KB`;
+    document.getElementById('filePreview').classList.remove('hidden');
+    
+    // 데이터 미리보기
+    const lines = data.trim().split('\\n');
+    const previewLines = lines.slice(0, 6); // 헤더 + 최대 5행
+    const preview = previewLines.map((line, idx) => {
+      const style = idx === 0 ? 'font-bold text-blue-600' : 'text-gray-700';
+      return \`<div class="\${style}">\${line}</div>\`;
+    }).join('');
+    document.getElementById('dataPreview').innerHTML = preview;
+    
+    showToast(\`\${fileName} 파일을 읽었습니다\`, 'success');
+  } catch (error) {
+    showToast('파일 읽기 실패', 'error');
+    event.target.value = '';
+  }
+}
+
+// CSV 파일 읽기
+function readCSVFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+// 파일 삭제
+function clearBulkFile() {
+  window.bulkFileData = null;
+  document.getElementById('bulkFileInput').value = '';
+  document.getElementById('filePreview').classList.add('hidden');
+  showToast('파일이 제거되었습니다', 'info');
 }
 
 async function processBulkUpload() {
-  const bulkData = document.getElementById('bulkData').value;
+  let bulkData = '';
+  
+  // 파일 업로드 탭인 경우
+  if (window.bulkFileData) {
+    bulkData = window.bulkFileData;
+  } else {
+    // 붙여넣기 탭인 경우
+    bulkData = document.getElementById('bulkData').value;
+  }
+  
   if (!bulkData.trim()) {
-    showToast('데이터를 입력해주세요', 'warning');
+    showToast('데이터를 입력하거나 파일을 선택해주세요', 'warning');
     return;
   }
   
@@ -841,17 +1018,25 @@ async function processBulkUpload() {
   
   // 첫 줄은 헤더로 스킵
   for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split('\t');
+    const line = lines[i].trim();
+    if (!line) continue;
+    
+    // CSV는 쉼표로, 붙여넣기는 탭으로 구분
+    const cols = line.includes(',') ? line.split(',') : line.split('\t');
+    
     if (cols.length >= 6) {
+      // 따옴표 제거 (CSV 파일의 경우)
+      const cleanValue = (val) => val ? val.trim().replace(/^["']|["']$/g, '') : '';
+      
       members.push({
-        name: cols[0].trim(),
-        gender: cols[1].trim(),
-        birth_year: parseInt(cols[2].trim()),
-        club: cols[3].trim(),
-        grade: cols[4].trim(),
-        phone: cols[5].trim(),
-        fee_paid: cols[6] ? parseInt(cols[6].trim()) : 0,
-        car_registered: cols[7] ? parseInt(cols[7].trim()) : 0
+        name: cleanValue(cols[0]),
+        gender: cleanValue(cols[1]),
+        birth_year: parseInt(cleanValue(cols[2])),
+        club: cleanValue(cols[3]),
+        grade: cleanValue(cols[4]),
+        phone: cleanValue(cols[5]),
+        fee_paid: cols[6] ? parseInt(cleanValue(cols[6])) : 0,
+        car_registered: cols[7] ? parseInt(cleanValue(cols[7])) : 0
       });
     }
   }
