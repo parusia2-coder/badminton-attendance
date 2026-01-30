@@ -967,15 +967,15 @@ async function handleBulkFileSelect(event) {
     document.getElementById('filePreview').classList.remove('hidden');
     
     // 데이터 미리보기
-    const lines = data.trim().split('\\n');
+    const lines = data.trim().split('\n');
     const previewLines = lines.slice(0, 6); // 헤더 + 최대 5행
     const preview = previewLines.map((line, idx) => {
       const style = idx === 0 ? 'font-bold text-blue-600' : 'text-gray-700';
-      return \`<div class="\${style}">\${line}</div>\`;
+      return `<div class="${style}">${line}</div>`;
     }).join('');
     document.getElementById('dataPreview').innerHTML = preview;
     
-    showToast(\`\${fileName} 파일을 읽었습니다\`, 'success');
+    showToast(`${fileName} 파일을 읽었습니다`, 'success');
   } catch (error) {
     showToast('파일 읽기 실패', 'error');
     event.target.value = '';
