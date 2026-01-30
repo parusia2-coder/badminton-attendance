@@ -11,10 +11,14 @@ import inventoryRoutes from './routes/inventory'
 import boardRoutes from './routes/boards'
 import dashboardRoutes from './routes/dashboard'
 import fileRoutes from './routes/files'
+import smsRoutes from './routes/sms'
 
 type Bindings = {
   DB: D1Database
   R2: R2Bucket
+  NHN_APP_KEY: string
+  NHN_SECRET_KEY: string
+  NHN_SENDER: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -34,6 +38,7 @@ app.route('/api/inventory', inventoryRoutes)
 app.route('/api/boards', boardRoutes)
 app.route('/api/dashboard', dashboardRoutes)
 app.route('/api/files', fileRoutes)
+app.route('/api/sms', smsRoutes)
 
 // Health check
 app.get('/api/health', (c) => {

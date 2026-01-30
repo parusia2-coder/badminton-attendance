@@ -557,6 +557,9 @@ function renderMembersPage() {
           <button onclick="showBulkUploadModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
             <i class="fas fa-upload mr-2"></i>일괄 업로드
           </button>
+          <button onclick="showSendSMSModal()" class="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">
+            <i class="fas fa-comment-dots mr-2"></i>문자발송
+          </button>
           <button onclick="exportMembers()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
             <i class="fas fa-download mr-2"></i>엑셀 내보내기
           </button>
@@ -603,6 +606,9 @@ function renderMembersPage() {
           <table class="w-full">
             <thead class="bg-gray-50">
               <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <input type="checkbox" id="selectAllMembers" onchange="toggleAllMembers()" class="rounded">
+                </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">성별</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">출생년도</th>
@@ -629,11 +635,15 @@ function renderMembersPage() {
 
 function renderMembersTable() {
   if (!app.data.members || app.data.members.length === 0) {
-    return '<tr><td colspan="9" class="px-6 py-12 text-center text-gray-500">등록된 회원이 없습니다</td></tr>';
+    return '<tr><td colspan="10" class="px-6 py-12 text-center text-gray-500">등록된 회원이 없습니다</td></tr>';
   }
   
   return app.data.members.map(member => `
     <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <input type="checkbox" class="member-checkbox rounded" value="${member.id}" 
+               data-name="${member.name}" data-phone="${member.phone}">
+      </td>
       <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${member.name}</td>
       <td class="px-6 py-4 whitespace-nowrap text-gray-600">${member.gender}</td>
       <td class="px-6 py-4 whitespace-nowrap text-gray-600">${member.birth_year}년</td>
@@ -2885,6 +2895,216 @@ async function deletePost(boardId, postId) {
     await viewBoardPosts(boardId);
   } catch (error) {
     showToast('게시글 삭제 실패', 'error');
+  }
+}
+
+// ========== SMS 발송 기능 ==========
+
+// 전체 선택/해제
+function toggleAllMembers() {
+  const selectAll = document.getElementById('selectAllMembers');
+  const checkboxes = document.querySelectorAll('.member-checkbox');
+  checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+// 문자발송 모달 표시
+function showSendSMSModal() {
+  const checkboxes = document.querySelectorAll('.member-checkbox:checked');
+  
+  // 선택된 회원이 없으면 전체 회원으로 설정
+  let selectedMembers = [];
+  if (checkboxes.length === 0) {
+    selectedMembers = app.data.members;
+  } else {
+    selectedMembers = Array.from(checkboxes).map(cb => ({
+      id: parseInt(cb.value),
+      name: cb.dataset.name,
+      phone: cb.dataset.phone
+    }));
+  }
+  
+  // 수신자 목록 생성
+  const recipientsList = selectedMembers.map(m => `
+    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+      <span class="text-sm">${m.name} (${m.phone})</span>
+    </div>
+  `).join('');
+  
+  const modalContainer = document.getElementById('modalContainer');
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+          <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-comment-dots text-teal-600 mr-2"></i>문자발송
+          </h2>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="p-6 space-y-6">
+          <!-- 수신자 정보 -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              수신자 (총 ${selectedMembers.length}명)
+            </label>
+            <div class="max-h-40 overflow-y-auto space-y-2 p-4 bg-gray-50 rounded-lg border">
+              ${recipientsList}
+            </div>
+          </div>
+          
+          <!-- 문자 템플릿 선택 -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              템플릿 선택 (선택사항)
+            </label>
+            <select id="smsTemplate" onchange="applySMSTemplate()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
+              <option value="">직접 입력</option>
+              <option value="meeting">정기모임 안내</option>
+              <option value="fee">회비 납부 안내</option>
+              <option value="reminder">일정 리마인더</option>
+              <option value="notice">공지사항</option>
+            </select>
+          </div>
+          
+          <!-- 문자 내용 -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              문자 내용 <span class="text-red-500">*</span>
+              <span id="smsLength" class="float-right text-sm text-gray-500">0 / 2000자</span>
+            </label>
+            <textarea 
+              id="smsMessage" 
+              rows="8" 
+              maxlength="2000"
+              oninput="updateSMSLength()"
+              placeholder="문자 내용을 입력하세요..."
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+            ></textarea>
+          </div>
+          
+          <!-- 예상 발송 비용 -->
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-700">예상 발송 건수</span>
+              <span class="font-semibold text-gray-900">${selectedMembers.length}건</span>
+            </div>
+            <div class="flex items-center justify-between text-sm mt-2">
+              <span class="text-gray-700">예상 비용 (건당 약 9원)</span>
+              <span class="font-semibold text-blue-600"약 ${selectedMembers.length * 9}원</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-end gap-3">
+          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
+            취소
+          </button>
+          <button onclick="sendSMS()" class="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700">
+            <i class="fas fa-paper-plane mr-2"></i>발송
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  modalContainer.classList.remove('hidden');
+  modalContainer.classList.add('flex');
+  
+  // 선택된 회원 데이터 저장
+  window.selectedSMSRecipients = selectedMembers;
+}
+
+// SMS 템플릿 적용
+function applySMSTemplate() {
+  const template = document.getElementById('smsTemplate').value;
+  const messageTextarea = document.getElementById('smsMessage');
+  
+  const templates = {
+    meeting: `[안양시배드민턴연합회]
+안녕하세요. 
+이번 정기모임이 다음과 같이 예정되어 있습니다.
+
+일시: [날짜] [시간]
+장소: 비산노인복지회관 5층
+
+많은 참석 부탁드립니다.`,
+    
+    fee: `[안양시배드민턴연합회]
+회원님, 연회비 납부 안내드립니다.
+
+납부 계좌: [계좌번호]
+금액: [금액]
+
+문의: 010-0000-0000`,
+    
+    reminder: `[안양시배드민턴연합회]
+내일 모임이 있습니다!
+
+일시: [날짜] [시간]
+장소: 비산노인복지회관 5층
+
+잊지 마시고 참석 부탁드립니다.`,
+    
+    notice: `[안양시배드민턴연합회]
+회원 여러분께 공지드립니다.
+
+[공지 내용]
+
+감사합니다.`
+  };
+  
+  if (templates[template]) {
+    messageTextarea.value = templates[template];
+    updateSMSLength();
+  }
+}
+
+// SMS 길이 업데이트
+function updateSMSLength() {
+  const message = document.getElementById('smsMessage').value;
+  const lengthSpan = document.getElementById('smsLength');
+  lengthSpan.textContent = `${message.length} / 2000자`;
+}
+
+// SMS 발송
+async function sendSMS() {
+  const message = document.getElementById('smsMessage').value.trim();
+  
+  if (!message) {
+    showToast('문자 내용을 입력해주세요', 'error');
+    return;
+  }
+  
+  if (!window.selectedSMSRecipients || window.selectedSMSRecipients.length === 0) {
+    showToast('수신자가 선택되지 않았습니다', 'error');
+    return;
+  }
+  
+  const recipients = window.selectedSMSRecipients.map(m => m.phone);
+  
+  if (!confirm(`${recipients.length}명에게 문자를 발송하시겠습니까?`)) {
+    return;
+  }
+  
+  try {
+    const response = await axios.post(`${API_BASE}/sms/send`, {
+      recipients,
+      message
+    });
+    
+    showToast(response.data.message || '문자가 발송되었습니다', 'success');
+    closeModal();
+    
+    // 체크박스 초기화
+    document.getElementById('selectAllMembers').checked = false;
+    document.querySelectorAll('.member-checkbox').forEach(cb => cb.checked = false);
+    
+  } catch (error) {
+    console.error('SMS 발송 오류:', error);
+    const errorMsg = error.response?.data?.error || '문자 발송에 실패했습니다';
+    showToast(errorMsg, 'error');
   }
 }
 
