@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>초간단 테스트</title>
+    <style>
+        body { font-family: monospace; padding: 40px; }
+        button { padding: 15px 30px; margin: 10px; font-size: 18px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 20px; border: 2px solid #ccc; min-height: 100px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🔍 회비 버튼 초간단 테스트</h1>
+    
+    <h2>1단계: 함수 정의 확인</h2>
+    <button onclick="checkFunctions()">함수 확인</button>
+    
+    <h2>2단계: 직접 호출 테스트</h2>
+    <button onclick="testCall()">window.showFeeSettingModal() 호출</button>
+    
+    <h2>3단계: 실제 버튼 (회비관리 페이지와 동일)</h2>
+    <button onclick="window.showFeeSettingModal()">회비 설정 (실제 버튼)</button>
+    
+    <h2>결과:</h2>
+    <div id="result"></div>
+    
+    <!-- modalContainer -->
+    <div id="modalContainer"></div>
+    
+    <!-- app.js 로드 -->
+    <script src="/static/app.js"></script>
+    
+    <script>
+        function log(message, isError = false) {
+            const result = document.getElementById('result');
+            const color = isError ? 'red' : 'green';
+            result.innerHTML += `<div style="color: ${color}">${message}</div>`;
+            console.log(message);
+        }
+        
+        function checkFunctions() {
+            log('=== 함수 확인 시작 ===');
+            
+            const functions = [
+                'window.showFeeSettingModal',
+                'window.showPayFeeModal',
+                'window.processFeePayment',
+                'window.saveFeeSetting'
+            ];
+            
+            let allOk = true;
+            functions.forEach(funcName => {
+                const func = eval(funcName);
+                const type = typeof func;
+                const isOk = type === 'function';
+                allOk = allOk && isOk;
+                
+                log(`${isOk ? '✅' : '❌'} ${funcName}: ${type}`, !isOk);
+            });
+            
+            if (allOk) {
+                log('✅ 모든 함수가 정의되어 있습니다!');
+            } else {
+                log('❌ 일부 함수가 정의되지 않았습니다', true);
+            }
+        }
+        
+        function testCall() {
+            log('=== 직접 호출 테스트 시작 ===');
+            
+            try {
+                if (typeof window.showFeeSettingModal === 'function') {
+                    log('✅ 함수 존재 확인');
+                    log('🔵 window.showFeeSettingModal() 호출 중...');
+                    
+                    window.showFeeSettingModal();
+                    
+                    log('✅ 호출 성공!');
+                    
+                    // 모달 확인
+                    setTimeout(() => {
+                        const modal = document.getElementById('modalContainer');
+                        if (modal && modal.innerHTML.includes('회비 설정')) {
+                            log('✅ 모달이 정상적으로 생성되었습니다!');
+                        } else {
+                            log('❌ 모달이 생성되지 않았습니다', true);
+                        }
+                    }, 100);
+                } else {
+                    log('❌ window.showFeeSettingModal이 함수가 아닙니다', true);
+                }
+            } catch (error) {
+                log('❌ 오류 발생: ' + error.message, true);
+                console.error(error);
+            }
+        }
+        
+        // 초기화
+        window.app = window.app || {
+            data: {
+                feeSetting: { year: 2026, amount: 50000 },
+                members: []
+            }
+        };
+        
+        window.closeModal = window.closeModal || function() {
+            const modal = document.getElementById('modalContainer');
+            if (modal) {
+                modal.innerHTML = '';
+                modal.style.display = 'none';
+            }
+            log('✅ 모달 닫기');
+        };
+        
+        log('🚀 테스트 페이지 로드 완료');
+        log('💡 순서대로 버튼을 클릭해주세요');
+    </script>
+</body>
+</html>
