@@ -1529,7 +1529,7 @@ async function exportMembers() {
     const members = response.data.members;
     
     // CSV 생성
-    let csv = '이름,성별,출생년도,클럽,급수,연락처,회비납부,차량등록\n';
+    let csv = '이름,성별,출생년도,클럽,조,연락처,회비납부,차량등록\n';
     members.forEach(m => {
       csv += `${m.name},${m.gender},${m.birth_year},${m.club},${m.grade},${m.phone},${m.fee_paid ? '납부' : '미납'},${m.car_registered ? '등록' : '미등록'}\n`;
     });

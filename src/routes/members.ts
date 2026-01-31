@@ -43,6 +43,16 @@ app.get('/', async (c) => {
   }
 })
 
+// 회원 엑셀 내보내기용 데이터 (/:id 보다 먼저 정의해야 함)
+app.get('/export', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare('SELECT * FROM members ORDER BY name ASC').all()
+    return c.json({ members: results })
+  } catch (error) {
+    return c.json({ error: '데이터 내보내기 중 오류가 발생했습니다' }, 500)
+  }
+})
+
 // 회원 상세 조회
 app.get('/:id', async (c) => {
   try {
@@ -174,16 +184,6 @@ app.get('/stats/summary', async (c) => {
     })
   } catch (error) {
     return c.json({ error: '통계 조회 중 오류가 발생했습니다' }, 500)
-  }
-})
-
-// 회원 엑셀 내보내기용 데이터
-app.get('/export', async (c) => {
-  try {
-    const { results } = await c.env.DB.prepare('SELECT * FROM members ORDER BY name ASC').all()
-    return c.json({ members: results })
-  } catch (error) {
-    return c.json({ error: '데이터 내보내기 중 오류가 발생했습니다' }, 500)
   }
 })
 
