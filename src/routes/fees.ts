@@ -262,41 +262,41 @@ app.get('/stats', async (c) => {
       SELECT COUNT(*) as count FROM members
     `).first()
     
-    // 납부 회원 수
+    // 납부 회원 수 (회원 테이블의 fee_paid 기준)
     const paidMembers = await env.DB.prepare(`
-      SELECT COUNT(DISTINCT member_id) as count 
-      FROM fee_payments 
-      WHERE year = ?
-    `).bind(year).first()
+      SELECT COUNT(*) as count 
+      FROM members 
+      WHERE fee_paid = 1
+    `).first()
     
-    // 총 납부액
+    // 총 납부액 (실제 납부 내역에서 계산)
     const totalAmount = await env.DB.prepare(`
       SELECT SUM(amount) as total 
       FROM fee_payments 
       WHERE year = ?
     `).bind(year).first()
     
-    // 미납 회원 목록
+    // 미납 회원 목록 (회원 테이블의 fee_paid = 0인 회원)
     const unpaidMembers = await env.DB.prepare(`
       SELECT m.* 
       FROM members m
-      WHERE m.id NOT IN (
-        SELECT DISTINCT member_id 
-        FROM fee_payments 
-        WHERE year = ?
-      )
+      WHERE m.fee_paid = 0
       ORDER BY m.club, m.name
-    `).bind(year).all()
+    `).all()
     
-    // 클럽별 납부 현황
+    // 클럽별 납부 현황 (회원 테이블 기준)
     const byClub = await env.DB.prepare(`
       SELECT 
         m.club,
-        COUNT(DISTINCT m.id) as total_members,
-        COUNT(DISTINCT fp.member_id) as paid_members,
-        COALESCE(SUM(fp.amount), 0) as total_amount
+        COUNT(*) as total_members,
+        SUM(CASE WHEN m.fee_paid = 1 THEN 1 ELSE 0 END) as paid_members,
+        COALESCE(
+          (SELECT SUM(fp.amount) 
+           FROM fee_payments fp 
+           WHERE fp.member_id = m.id AND fp.year = ?),
+          0
+        ) as total_amount
       FROM members m
-      LEFT JOIN fee_payments fp ON m.id = fp.member_id AND fp.year = ?
       GROUP BY m.club
       ORDER BY m.club
     `).bind(year).all()
@@ -330,13 +330,9 @@ app.get('/unpaid', async (c) => {
     const unpaidMembers = await env.DB.prepare(`
       SELECT m.* 
       FROM members m
-      WHERE m.id NOT IN (
-        SELECT DISTINCT member_id 
-        FROM fee_payments 
-        WHERE year = ?
-      )
+      WHERE m.fee_paid = 0
       ORDER BY m.club, m.name
-    `).bind(year).all()
+    `).all()
     
     return c.json({ 
       year,
