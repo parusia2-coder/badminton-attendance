@@ -180,7 +180,7 @@ app.get('/stats/yearly/:year', async (c) => {
   }
 })
 
-// 전체 출석 데이터 삭제 (초기화)
+// 전체 출석 데이터 삭제 (초기화) - 다른 라우트보다 먼저 정의
 app.delete('/all', async (c) => {
   try {
     await c.env.DB.prepare('DELETE FROM attendances').run()

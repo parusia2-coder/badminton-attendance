@@ -161,22 +161,22 @@ app.put('/:id', async (c) => {
   }
 })
 
+// 전체 일정 삭제 (초기화) - /:id 보다 먼저 정의해야 함
+app.delete('/all', async (c) => {
+  try {
+    await c.env.DB.prepare('DELETE FROM schedules').run()
+    return c.json({ message: '모든 일정이 삭제되었습니다' })
+  } catch (error) {
+    return c.json({ error: '일정 삭제 중 오류가 발생했습니다' }, 500)
+  }
+})
+
 // 일정 삭제
 app.delete('/:id', async (c) => {
   try {
     const id = c.req.param('id')
     await c.env.DB.prepare('DELETE FROM schedules WHERE id = ?').bind(id).run()
     return c.json({ message: '일정이 삭제되었습니다' })
-  } catch (error) {
-    return c.json({ error: '일정 삭제 중 오류가 발생했습니다' }, 500)
-  }
-})
-
-// 전체 일정 삭제 (초기화)
-app.delete('/all', async (c) => {
-  try {
-    await c.env.DB.prepare('DELETE FROM schedules').run()
-    return c.json({ message: '모든 일정이 삭제되었습니다' })
   } catch (error) {
     return c.json({ error: '일정 삭제 중 오류가 발생했습니다' }, 500)
   }
