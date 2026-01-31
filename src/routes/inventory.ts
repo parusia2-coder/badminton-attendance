@@ -145,6 +145,71 @@ app.get('/alerts/low-stock', async (c) => {
   }
 })
 
+// 월별 입출고 통계
+app.get('/stats/monthly', async (c) => {
+  try {
+    const year = c.req.query('year') || new Date().getFullYear().toString()
+    const month = c.req.query('month') || (new Date().getMonth() + 1).toString().padStart(2, '0')
+    
+    // 해당 월의 입출고 내역 조회
+    const { results: logs } = await c.env.DB.prepare(`
+      SELECT 
+        il.*,
+        i.item_name,
+        i.unit
+      FROM inventory_logs il
+      JOIN inventory i ON il.inventory_id = i.id
+      WHERE strftime('%Y-%m', il.created_at) = ?
+      ORDER BY il.created_at DESC
+    `).bind(`${year}-${month}`).all()
+    
+    // 통계 계산
+    const stats = {
+      year: parseInt(year),
+      month: parseInt(month),
+      totalIn: 0,
+      totalOut: 0,
+      transactionCount: logs.length,
+      byItem: {} as Record<string, any>,
+      recentLogs: logs.slice(0, 20)
+    }
+    
+    logs.forEach((log: any) => {
+      if (log.type === '입고') {
+        stats.totalIn += log.quantity
+      } else if (log.type === '출고') {
+        stats.totalOut += log.quantity
+      }
+      
+      // 품목별 통계
+      if (!stats.byItem[log.item_name]) {
+        stats.byItem[log.item_name] = {
+          item_name: log.item_name,
+          unit: log.unit,
+          totalIn: 0,
+          totalOut: 0,
+          count: 0
+        }
+      }
+      
+      stats.byItem[log.item_name].count++
+      if (log.type === '입고') {
+        stats.byItem[log.item_name].totalIn += log.quantity
+      } else {
+        stats.byItem[log.item_name].totalOut += log.quantity
+      }
+    })
+    
+    // 품목별 통계를 배열로 변환
+    stats.byItem = Object.values(stats.byItem)
+    
+    return c.json(stats)
+  } catch (error) {
+    console.error('Monthly stats error:', error)
+    return c.json({ error: '월별 통계 조회 중 오류가 발생했습니다' }, 500)
+  }
+})
+
 // 재고 삭제
 app.delete('/:id', async (c) => {
   try {

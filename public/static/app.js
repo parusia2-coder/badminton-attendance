@@ -2448,9 +2448,14 @@ function renderInventoryPage() {
     <div class="space-y-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 class="text-3xl font-bold text-gray-800">재고관리</h1>
-        <button onclick="showAddInventoryModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-          <i class="fas fa-plus mr-2"></i>재고 추가
-        </button>
+        <div class="flex gap-2">
+          <button onclick="showInventoryMonthlyStats()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+            <i class="fas fa-chart-bar mr-2"></i>월별 통계
+          </button>
+          <button onclick="showAddInventoryModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i>재고 추가
+          </button>
+        </div>
       </div>
       
       <!-- 재고 현황 -->
@@ -2657,6 +2662,187 @@ async function showInventoryLogs(itemId) {
     document.getElementById('modalContainer').innerHTML = modal;
   } catch (error) {
     showToast('입출고 내역 조회 실패', 'error');
+  }
+}
+
+// 월별 통계 모달
+async function showInventoryMonthlyStats() {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1;
+  
+  try {
+    const response = await axios.get(`${API_BASE}/inventory/stats/monthly?year=${currentYear}&month=${currentMonth.toString().padStart(2, '0')}`);
+    const stats = response.data;
+    
+    const modal = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl my-8">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">${stats.year}년 ${stats.month}월 재고 입출고 통계</h2>
+            <button onclick="closeModal()" class="text-gray-600 hover:text-gray-800">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          
+          <!-- 월 선택 -->
+          <div class="mb-6 flex gap-2 items-center">
+            <label class="font-medium">조회 월:</label>
+            <select id="statsYear" class="px-3 py-2 border rounded-lg" onchange="changeStatsMonth()">
+              ${[currentYear - 1, currentYear, currentYear + 1].map(y => 
+                `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}년</option>`
+              ).join('')}
+            </select>
+            <select id="statsMonth" class="px-3 py-2 border rounded-lg" onchange="changeStatsMonth()">
+              ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => 
+                `<option value="${m}" ${m === currentMonth ? 'selected' : ''}>${m}월</option>`
+              ).join('')}
+            </select>
+          </div>
+          
+          <!-- 통계 카드 -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+              <p class="text-sm text-green-600 font-medium mb-1">총 입고</p>
+              <p class="text-3xl font-bold text-green-700">${stats.totalIn}</p>
+            </div>
+            <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+              <p class="text-sm text-red-600 font-medium mb-1">총 출고</p>
+              <p class="text-3xl font-bold text-red-700">${stats.totalOut}</p>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <p class="text-sm text-blue-600 font-medium mb-1">총 거래 건수</p>
+              <p class="text-3xl font-bold text-blue-700">${stats.transactionCount}</p>
+            </div>
+          </div>
+          
+          <!-- 품목별 통계 -->
+          <div class="mb-6">
+            <h3 class="text-lg font-bold mb-3">품목별 입출고 현황</h3>
+            ${stats.byItem.length === 0 ? 
+              '<p class="text-center text-gray-500 py-8">이번 달 입출고 내역이 없습니다</p>' :
+              `<div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">품목명</th>
+                      <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">입고</th>
+                      <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">출고</th>
+                      <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">순증감</th>
+                      <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">거래건수</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    ${stats.byItem.map(item => {
+                      const net = item.totalIn - item.totalOut;
+                      return `
+                        <tr class="hover:bg-gray-50">
+                          <td class="px-4 py-3 font-medium">${item.item_name}</td>
+                          <td class="px-4 py-3 text-center text-green-600 font-semibold">+${item.totalIn}${item.unit}</td>
+                          <td class="px-4 py-3 text-center text-red-600 font-semibold">-${item.totalOut}${item.unit}</td>
+                          <td class="px-4 py-3 text-center font-bold ${net >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${net >= 0 ? '+' : ''}${net}${item.unit}
+                          </td>
+                          <td class="px-4 py-3 text-center text-gray-700">${item.count}건</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>`
+            }
+          </div>
+          
+          <!-- 최근 거래 내역 -->
+          <div>
+            <h3 class="text-lg font-bold mb-3">최근 거래 내역 (최대 20건)</h3>
+            ${stats.recentLogs.length === 0 ?
+              '<p class="text-center text-gray-500 py-8">거래 내역이 없습니다</p>' :
+              `<div class="space-y-2 max-h-[300px] overflow-y-auto">
+                ${stats.recentLogs.map(log => `
+                  <div class="flex items-center justify-between p-3 border rounded-lg">
+                    <div class="flex items-center flex-1">
+                      <span class="w-10 h-10 flex items-center justify-center ${log.type === '입고' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} rounded-full mr-3">
+                        <i class="fas fa-${log.type === '입고' ? 'plus' : 'minus'} text-sm"></i>
+                      </span>
+                      <div class="flex-1">
+                        <p class="font-semibold">${log.item_name} - ${log.type} ${log.quantity}${log.unit}</p>
+                        <p class="text-sm text-gray-600">${dayjs(log.created_at).format('YYYY-MM-DD HH:mm')}</p>
+                        ${log.note ? `<p class="text-sm text-gray-500">${log.note}</p>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>`
+            }
+          </div>
+          
+          <div class="mt-6 flex justify-end gap-2">
+            <button onclick="exportInventoryStats()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <i class="fas fa-download mr-2"></i>엑셀 내보내기
+            </button>
+            <button onclick="closeModal()" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">닫기</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById('modalContainer').innerHTML = modal;
+  } catch (error) {
+    console.error('Stats error:', error);
+    showToast('월별 통계 조회 실패', 'error');
+  }
+}
+
+// 월 변경 시 통계 다시 로드
+async function changeStatsMonth() {
+  const year = document.getElementById('statsYear').value;
+  const month = document.getElementById('statsMonth').value;
+  
+  try {
+    const response = await axios.get(`${API_BASE}/inventory/stats/monthly?year=${year}&month=${month.padStart(2, '0')}`);
+    const stats = response.data;
+    
+    // 모달 내용만 업데이트 (간단하게 전체 재로드)
+    closeModal();
+    setTimeout(() => showInventoryMonthlyStats(), 100);
+  } catch (error) {
+    showToast('통계 조회 실패', 'error');
+  }
+}
+
+// 통계 엑셀 내보내기
+async function exportInventoryStats() {
+  const year = document.getElementById('statsYear').value;
+  const month = document.getElementById('statsMonth').value;
+  
+  try {
+    const response = await axios.get(`${API_BASE}/inventory/stats/monthly?year=${year}&month=${month.padStart(2, '0')}`);
+    const stats = response.data;
+    
+    // CSV 생성
+    let csv = `재고 입출고 통계 (${year}년 ${month}월)\n\n`;
+    csv += `총 입고,${stats.totalIn}\n`;
+    csv += `총 출고,${stats.totalOut}\n`;
+    csv += `총 거래건수,${stats.transactionCount}\n\n`;
+    
+    csv += `품목별 상세\n`;
+    csv += `품목명,입고,출고,순증감,거래건수\n`;
+    stats.byItem.forEach(item => {
+      const net = item.totalIn - item.totalOut;
+      csv += `${item.item_name},${item.totalIn}${item.unit},${item.totalOut}${item.unit},${net}${item.unit},${item.count}건\n`;
+    });
+    
+    // 다운로드
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `재고통계_${year}-${month}.csv`;
+    link.click();
+    
+    showToast('통계가 다운로드되었습니다', 'success');
+  } catch (error) {
+    showToast('내보내기 실패', 'error');
   }
 }
 
