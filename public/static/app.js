@@ -695,9 +695,9 @@ function renderDashboard() {
       
       <!-- 차트 및 상세 정보 -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- 급수별 회원 분포 -->
+        <!-- 조별 회원 분포 -->
         <div class="bg-white p-6 rounded-lg shadow-md">
-          <h3 class="text-lg font-bold text-gray-800 mb-4">급수별 회원 분포</h3>
+          <h3 class="text-lg font-bold text-gray-800 mb-4">조별 회원 분포</h3>
           <canvas id="gradeChart"></canvas>
         </div>
         
@@ -784,7 +784,7 @@ function renderDashboard() {
 }
 
 function attachDashboardHandlers() {
-  // 급수별 회원 분포 차트
+  // 조별 회원 분포 차트
   const gradeCanvas = document.getElementById('gradeChart');
   if (gradeCanvas && app.data.dashboard) {
     const gradeData = app.data.dashboard.members.gradeDistribution;
@@ -850,12 +850,12 @@ function renderMembersPage() {
             <option value="">전체 클럽</option>
           </select>
           <select id="gradeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            <option value="">전체 급수</option>
-            <option value="S">S급</option>
-            <option value="A">A급</option>
-            <option value="B">B급</option>
-            <option value="C">C급</option>
-            <option value="D">D급</option>
+            <option value="">전체 조</option>
+            <option value="S">S조</option>
+            <option value="A">A조</option>
+            <option value="B">B조</option>
+            <option value="C">C조</option>
+            <option value="D">D조</option>
           </select>
           <select id="feeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
             <option value="">전체</option>
@@ -881,7 +881,7 @@ function renderMembersPage() {
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">성별</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">출생년도</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">클럽</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">급수</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">조</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">연락처</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">회비</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">차량</th>
@@ -918,7 +918,7 @@ function renderMembersTable() {
       <td class="px-6 py-4 whitespace-nowrap text-gray-600">${member.club}</td>
       <td class="px-6 py-4 whitespace-nowrap">
         <span class="px-3 py-1 text-xs font-semibold rounded-full ${getGradeBadgeColor(member.grade)}">
-          ${member.grade}급
+          ${member.grade}조
         </span>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-gray-600">${member.phone}</td>
@@ -1011,13 +1011,13 @@ function showAddMemberModal() {
               <input type="text" name="club" required class="w-full px-4 py-2 border rounded-lg">
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">급수 *</label>
+              <label class="block text-sm font-medium mb-2">조 *</label>
               <select name="grade" required class="w-full px-4 py-2 border rounded-lg">
-                <option value="S">S급</option>
-                <option value="A">A급</option>
-                <option value="B">B급</option>
-                <option value="C">C급</option>
-                <option value="D">D급</option>
+                <option value="S">S조</option>
+                <option value="A">A조</option>
+                <option value="B">B조</option>
+                <option value="C">C조</option>
+                <option value="D">D조</option>
               </select>
             </div>
             <div>
@@ -1110,7 +1110,7 @@ function showMemberDetail(memberId) {
               <p class="text-sm text-gray-500 mb-1">급수</p>
               <p class="text-lg font-semibold">
                 <span class="px-3 py-1 text-sm rounded-full ${getGradeBadgeColor(member.grade)}">
-                  ${member.grade}급
+                  ${member.grade}조
                 </span>
               </p>
             </div>
@@ -1194,13 +1194,13 @@ function showEditMemberModal(memberId) {
               <input type="text" name="club" value="${member.club}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">급수 *</label>
+              <label class="block text-sm font-medium mb-2">조 *</label>
               <select name="grade" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="S" ${member.grade === 'S' ? 'selected' : ''}>S급</option>
-                <option value="A" ${member.grade === 'A' ? 'selected' : ''}>A급</option>
-                <option value="B" ${member.grade === 'B' ? 'selected' : ''}>B급</option>
-                <option value="C" ${member.grade === 'C' ? 'selected' : ''}>C급</option>
-                <option value="D" ${member.grade === 'D' ? 'selected' : ''}>D급</option>
+                <option value="S" ${member.grade === 'S' ? 'selected' : ''}>S조</option>
+                <option value="A" ${member.grade === 'A' ? 'selected' : ''}>A조</option>
+                <option value="B" ${member.grade === 'B' ? 'selected' : ''}>B조</option>
+                <option value="C" ${member.grade === 'C' ? 'selected' : ''}>C조</option>
+                <option value="D" ${member.grade === 'D' ? 'selected' : ''}>D조</option>
               </select>
             </div>
             <div>
@@ -3630,7 +3630,7 @@ function renderUnpaidTab() {
               <td class="px-6 py-4 whitespace-nowrap text-gray-600">${m.club}</td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-3 py-1 text-xs font-semibold rounded-full ${getGradeBadgeColor(m.grade)}">
-                  ${m.grade}급
+                  ${m.grade}조
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-600">${m.phone}</td>
