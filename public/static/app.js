@@ -262,6 +262,14 @@ async function checkSession() {
 
 // 초기화
 async function init() {
+  // modalContainer 생성 (없으면)
+  if (!document.getElementById('modalContainer')) {
+    const modalContainer = document.createElement('div');
+    modalContainer.id = 'modalContainer';
+    document.body.appendChild(modalContainer);
+    console.log('✅ modalContainer 생성 완료');
+  }
+  
   const isLoggedIn = await checkSession();
   
   if (isLoggedIn) {
