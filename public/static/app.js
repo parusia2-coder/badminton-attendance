@@ -817,7 +817,10 @@ function renderMembersPage() {
   return `
     <div class="space-y-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 class="text-3xl font-bold text-gray-800">회원관리</h1>
+        <div class="flex items-center gap-3">
+          <h1 class="text-3xl font-bold text-gray-800">회원관리</h1>
+          <span id="selectedCount" class="hidden text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold"></span>
+        </div>
         <div class="flex flex-wrap gap-2">
           <button onclick="showAddMemberModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
             <i class="fas fa-plus mr-2"></i>회원 등록
@@ -828,8 +831,11 @@ function renderMembersPage() {
           <button onclick="showSendSMSModal()" class="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">
             <i class="fas fa-comment-dots mr-2"></i>문자발송
           </button>
-          <button onclick="exportMembers()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-            <i class="fas fa-download mr-2"></i>엑셀 내보내기
+          <button onclick="exportMembers(false)" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+            <i class="fas fa-download mr-2"></i>전체 내보내기
+          </button>
+          <button onclick="exportMembers(true)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+            <i class="fas fa-check-square mr-2"></i>선택 내보내기
           </button>
           <button onclick="showDeleteAllMembersConfirm()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
             <i class="fas fa-trash-alt mr-2"></i>전체 삭제
@@ -910,6 +916,7 @@ function renderMembersTable() {
     <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 whitespace-nowrap">
         <input type="checkbox" class="member-checkbox rounded" value="${member.id}" 
+               onchange="updateSelectedCount()"
                data-name="${member.name}" data-phone="${member.phone}">
       </td>
       <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${member.name}</td>
@@ -1523,10 +1530,30 @@ async function processBulkUpload() {
   }
 }
 
-async function exportMembers() {
+async function exportMembers(selectedOnly = false) {
   try {
-    const response = await axios.get(`${API_BASE}/members/export`);
-    const members = response.data.members;
+    let members;
+    
+    if (selectedOnly) {
+      // 선택된 회원만 내보내기
+      const checkboxes = document.querySelectorAll('.member-checkbox:checked');
+      
+      if (checkboxes.length === 0) {
+        showToast('내보낼 회원을 선택해주세요', 'warning');
+        return;
+      }
+      
+      const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+      members = app.data.members.filter(m => selectedIds.includes(m.id));
+      
+      console.log(`선택된 ${members.length}명 내보내기`);
+    } else {
+      // 전체 회원 내보내기
+      const response = await axios.get(`${API_BASE}/members/export`);
+      members = response.data.members;
+      
+      console.log(`전체 ${members.length}명 내보내기`);
+    }
     
     // CSV 생성
     let csv = '이름,성별,출생년도,클럽,조,연락처,회비납부,차량등록\n';
@@ -1538,11 +1565,13 @@ async function exportMembers() {
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `회원목록_${dayjs().format('YYYY-MM-DD')}.csv`;
+    const prefix = selectedOnly ? '선택회원' : '전체회원';
+    link.download = `${prefix}_${dayjs().format('YYYY-MM-DD')}.csv`;
     link.click();
     
-    showToast('엑셀 파일이 다운로드되었습니다', 'success');
+    showToast(`${members.length}명의 회원 정보가 다운로드되었습니다`, 'success');
   } catch (error) {
+    console.error('Export error:', error);
     showToast('엑셀 내보내기 실패', 'error');
   }
 }
@@ -3233,6 +3262,23 @@ function toggleAllMembers() {
   const selectAll = document.getElementById('selectAllMembers');
   const checkboxes = document.querySelectorAll('.member-checkbox');
   checkboxes.forEach(cb => cb.checked = selectAll.checked);
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const checkboxes = document.querySelectorAll('.member-checkbox:checked');
+  const count = checkboxes.length;
+  
+  // 선택 카운트 표시 영역이 있으면 업데이트
+  const countElement = document.getElementById('selectedCount');
+  if (countElement) {
+    if (count > 0) {
+      countElement.textContent = `${count}명 선택됨`;
+      countElement.classList.remove('hidden');
+    } else {
+      countElement.classList.add('hidden');
+    }
+  }
 }
 
 // 문자발송 모달 표시
