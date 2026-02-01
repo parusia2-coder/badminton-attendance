@@ -2452,8 +2452,26 @@ function renderInventoryPage() {
           <button onclick="showInventoryMonthlyStats()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
             <i class="fas fa-chart-bar mr-2"></i>월별 통계
           </button>
+          <button onclick="toggleReorderMode()" id="reorderBtn" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
+            <i class="fas fa-sort mr-2"></i>순서 변경
+          </button>
           <button onclick="showAddInventoryModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
             <i class="fas fa-plus mr-2"></i>재고 추가
+          </button>
+        </div>
+      </div>
+      
+      <div id="reorderModeNotice" class="hidden bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center">
+            <i class="fas fa-info-circle text-orange-500 mr-3"></i>
+            <div>
+              <p class="font-semibold text-orange-800">순서 변경 모드</p>
+              <p class="text-sm text-orange-700">재고 카드를 위/아래로 이동하여 순서를 변경하세요</p>
+            </div>
+          </div>
+          <button onclick="saveInventoryOrder()" class="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700">
+            <i class="fas fa-check mr-2"></i>저장
           </button>
         </div>
       </div>
@@ -2473,16 +2491,31 @@ function renderInventoryCards() {
     return '<div class="col-span-3 bg-white p-12 rounded-lg shadow-md text-center text-gray-500">등록된 재고가 없습니다</div>';
   }
   
-  return app.data.inventory.map(item => {
+  return app.data.inventory.map((item, index) => {
     const isLowStock = item.quantity <= item.min_quantity;
     return `
-      <div class="bg-white p-6 rounded-lg shadow-md ${isLowStock ? 'border-2 border-red-500' : ''}">
+      <div class="inventory-card bg-white p-6 rounded-lg shadow-md ${isLowStock ? 'border-2 border-red-500' : ''}" data-id="${item.id}" data-order="${item.display_order || index}">
         <div class="flex justify-between items-start mb-4">
-          <div>
-            <h3 class="text-lg font-bold text-gray-800">${item.item_name}</h3>
-            ${item.note ? `<p class="text-sm text-gray-600 mt-1">${item.note}</p>` : ''}
+          <div class="flex items-center gap-2">
+            <div class="reorder-handle hidden cursor-move text-gray-400 hover:text-gray-600">
+              <i class="fas fa-grip-vertical text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-800">${item.item_name}</h3>
+              ${item.note ? `<p class="text-sm text-gray-600 mt-1">${item.note}</p>` : ''}
+            </div>
           </div>
-          ${isLowStock ? '<span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">부족</span>' : ''}
+          <div class="flex items-center gap-2">
+            <div class="reorder-buttons hidden flex flex-col gap-1">
+              <button onclick="moveInventoryUp(${item.id})" class="text-gray-600 hover:text-blue-600" title="위로">
+                <i class="fas fa-chevron-up"></i>
+              </button>
+              <button onclick="moveInventoryDown(${item.id})" class="text-gray-600 hover:text-blue-600" title="아래로">
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            </div>
+            ${isLowStock ? '<span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">부족</span>' : ''}
+          </div>
         </div>
         
         <div class="mb-4">
@@ -2661,6 +2694,77 @@ async function confirmDeleteInventory(itemId) {
     } catch (error) {
       showToast('재고 삭제 실패', 'error');
     }
+  }
+}
+
+// 순서 변경 모드 토글
+let reorderMode = false;
+
+function toggleReorderMode() {
+  reorderMode = !reorderMode;
+  const btn = document.getElementById('reorderBtn');
+  const notice = document.getElementById('reorderModeNotice');
+  const handles = document.querySelectorAll('.reorder-handle');
+  const buttons = document.querySelectorAll('.reorder-buttons');
+  
+  if (reorderMode) {
+    btn.innerHTML = '<i class="fas fa-times mr-2"></i>취소';
+    btn.className = 'bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700';
+    notice.classList.remove('hidden');
+    handles.forEach(h => h.classList.remove('hidden'));
+    buttons.forEach(b => b.classList.remove('hidden'));
+  } else {
+    btn.innerHTML = '<i class="fas fa-sort mr-2"></i>순서 변경';
+    btn.className = 'bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700';
+    notice.classList.add('hidden');
+    handles.forEach(h => h.classList.add('hidden'));
+    buttons.forEach(b => b.classList.add('hidden'));
+  }
+}
+
+function moveInventoryUp(itemId) {
+  const cards = Array.from(document.querySelectorAll('.inventory-card'));
+  const currentCard = cards.find(c => c.dataset.id == itemId);
+  const currentIndex = cards.indexOf(currentCard);
+  
+  if (currentIndex > 0) {
+    const previousCard = cards[currentIndex - 1];
+    currentCard.parentNode.insertBefore(currentCard, previousCard);
+    showToast('위로 이동했습니다', 'info');
+  }
+}
+
+function moveInventoryDown(itemId) {
+  const cards = Array.from(document.querySelectorAll('.inventory-card'));
+  const currentCard = cards.find(c => c.dataset.id == itemId);
+  const currentIndex = cards.indexOf(currentCard);
+  
+  if (currentIndex < cards.length - 1) {
+    const nextCard = cards[currentIndex + 1];
+    currentCard.parentNode.insertBefore(nextCard, currentCard);
+    showToast('아래로 이동했습니다', 'info');
+  }
+}
+
+async function saveInventoryOrder() {
+  try {
+    const cards = Array.from(document.querySelectorAll('.inventory-card'));
+    const items = cards.map((card, index) => ({
+      id: parseInt(card.dataset.id),
+      display_order: (index + 1) * 10
+    }));
+    
+    await axios.post(`${API_BASE}/inventory/reorder`, { items });
+    showToast('순서가 저장되었습니다', 'success');
+    
+    // 순서 변경 모드 종료
+    toggleReorderMode();
+    
+    // 재고 새로고침
+    await loadInventory();
+    renderCurrentPage();
+  } catch (error) {
+    showToast('순서 저장 실패', 'error');
   }
 }
 

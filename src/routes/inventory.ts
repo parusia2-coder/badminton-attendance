@@ -10,7 +10,7 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.get('/', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
-      'SELECT * FROM inventory ORDER BY item_name ASC'
+      'SELECT * FROM inventory ORDER BY display_order ASC, item_name ASC'
     ).all()
     
     return c.json({ inventory: results })
@@ -295,6 +295,25 @@ app.get('/:id/price-trend', async (c) => {
   } catch (error) {
     console.error('Price trend error:', error)
     return c.json({ error: '단가 추이 조회 중 오류가 발생했습니다' }, 500)
+  }
+})
+
+// 순서 변경
+app.post('/reorder', async (c) => {
+  try {
+    const { items } = await c.req.json() // items: [{id: 1, display_order: 10}, ...]
+    
+    // 각 품목의 순서를 업데이트
+    for (const item of items) {
+      await c.env.DB.prepare(
+        'UPDATE inventory SET display_order = ? WHERE id = ?'
+      ).bind(item.display_order, item.id).run()
+    }
+    
+    return c.json({ message: '순서가 변경되었습니다' })
+  } catch (error) {
+    console.error('Reorder error:', error)
+    return c.json({ error: '순서 변경 중 오류가 발생했습니다' }, 500)
   }
 })
 
