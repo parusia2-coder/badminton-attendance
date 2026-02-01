@@ -257,6 +257,13 @@ app.get('/stats', async (c) => {
   const year = parseInt(c.req.query('year') || new Date().getFullYear().toString())
   
   try {
+    // 회비 설정 가져오기
+    const feeSetting = await env.DB.prepare(`
+      SELECT amount FROM fee_settings WHERE year = ?
+    `).bind(year).first()
+    
+    const feeAmount = feeSetting?.amount || 0
+    
     // 전체 회원 수 (면제 제외)
     const totalMembers = await env.DB.prepare(`
       SELECT COUNT(*) as count FROM members WHERE fee_paid != 2
@@ -276,12 +283,8 @@ app.get('/stats', async (c) => {
       WHERE fee_paid = 2
     `).first()
     
-    // 총 납부액 (실제 납부 내역에서 계산)
-    const totalAmount = await env.DB.prepare(`
-      SELECT COALESCE(SUM(amount), 0) as total 
-      FROM fee_payments 
-      WHERE year = ?
-    `).bind(year).first()
+    // 총 납부액 (회비 설정액 × 납부 회원 수)
+    const totalAmount = (paidMembers?.count || 0) * feeAmount
     
     // 미납 회원 목록 (fee_paid = 0인 회원만)
     const unpaidMembers = await env.DB.prepare(`
@@ -305,18 +308,17 @@ app.get('/stats', async (c) => {
         m.club,
         COUNT(CASE WHEN m.fee_paid != 2 THEN 1 END) as total_members,
         COUNT(CASE WHEN m.fee_paid = 1 THEN 1 END) as paid_members,
-        COUNT(CASE WHEN m.fee_paid = 2 THEN 1 END) as exempt_members,
-        COALESCE(
-          (SELECT SUM(fp.amount) 
-           FROM fee_payments fp 
-           JOIN members m2 ON fp.member_id = m2.id
-           WHERE m2.club = m.club AND fp.year = ?),
-          0
-        ) as total_amount
+        COUNT(CASE WHEN m.fee_paid = 2 THEN 1 END) as exempt_members
       FROM members m
       GROUP BY m.club
       ORDER BY m.club
-    `).bind(year).all()
+    `).all()
+    
+    // 클럽별 납부액 계산 (회비 설정액 × 납부 회원 수)
+    const byClubWithAmount = byClub.results.map(club => ({
+      ...club,
+      total_amount: club.paid_members * feeAmount
+    }))
     
     const stats = {
       year,
@@ -329,8 +331,8 @@ app.get('/stats', async (c) => {
       paymentRate: totalMembers?.count 
         ? Math.round((paidMembers?.count || 0) / totalMembers.count * 100) 
         : 0,
-      totalAmount: totalAmount?.total || 0,
-      byClub: byClub.results
+      totalAmount: totalAmount,
+      byClub: byClubWithAmount
     }
     
     return c.json(stats)
