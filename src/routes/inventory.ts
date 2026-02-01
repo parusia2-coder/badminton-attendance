@@ -89,7 +89,7 @@ app.put('/:id', async (c) => {
 app.post('/:id/transaction', async (c) => {
   try {
     const id = c.req.param('id')
-    const { type, quantity, note } = await c.req.json()
+    const { type, quantity, note, unit_price } = await c.req.json()
     
     // 현재 재고 조회
     const item = await c.env.DB.prepare(
@@ -118,10 +118,10 @@ app.post('/:id/transaction', async (c) => {
       'UPDATE inventory SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(newQuantity, id).run()
     
-    // 입출고 내역 기록
+    // 입출고 내역 기록 (단가 포함)
     await c.env.DB.prepare(
-      'INSERT INTO inventory_logs (inventory_id, type, quantity, note) VALUES (?, ?, ?, ?)'
-    ).bind(id, type, quantity, note || '').run()
+      'INSERT INTO inventory_logs (inventory_id, type, quantity, note, unit_price) VALUES (?, ?, ?, ?, ?)'
+    ).bind(id, type, quantity, note || '', unit_price || 0).run()
     
     return c.json({ 
       message: `${type}가 처리되었습니다`,
@@ -169,16 +169,22 @@ app.get('/stats/monthly', async (c) => {
       month: parseInt(month),
       totalIn: 0,
       totalOut: 0,
+      totalInAmount: 0,
+      totalOutAmount: 0,
       transactionCount: logs.length,
       byItem: {} as Record<string, any>,
       recentLogs: logs.slice(0, 20)
     }
     
     logs.forEach((log: any) => {
+      const amount = (log.unit_price || 0) * log.quantity
+      
       if (log.type === '입고') {
         stats.totalIn += log.quantity
+        stats.totalInAmount += amount
       } else if (log.type === '출고') {
         stats.totalOut += log.quantity
+        stats.totalOutAmount += amount
       }
       
       // 품목별 통계
@@ -188,6 +194,8 @@ app.get('/stats/monthly', async (c) => {
           unit: log.unit,
           totalIn: 0,
           totalOut: 0,
+          totalInAmount: 0,
+          totalOutAmount: 0,
           count: 0
         }
       }
@@ -195,8 +203,10 @@ app.get('/stats/monthly', async (c) => {
       stats.byItem[log.item_name].count++
       if (log.type === '입고') {
         stats.byItem[log.item_name].totalIn += log.quantity
+        stats.byItem[log.item_name].totalInAmount += amount
       } else {
         stats.byItem[log.item_name].totalOut += log.quantity
+        stats.byItem[log.item_name].totalOutAmount += amount
       }
     })
     

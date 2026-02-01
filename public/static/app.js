@@ -2584,6 +2584,13 @@ function showInventoryTransaction(itemId, type) {
             <label class="block text-sm font-medium mb-2">${type} 수량 *</label>
             <input type="number" id="transactionQuantity" required min="1" class="w-full px-4 py-2 border rounded-lg">
           </div>
+          ${type === '입고' ? `
+          <div>
+            <label class="block text-sm font-medium mb-2">단가 (원) ${type === '입고' ? '*' : ''}</label>
+            <input type="number" id="transactionUnitPrice" ${type === '입고' ? 'required' : ''} min="0" placeholder="예: 1000" class="w-full px-4 py-2 border rounded-lg">
+            <p class="text-xs text-gray-500 mt-1">입고 시 단가를 입력해주세요 (0원 가능)</p>
+          </div>
+          ` : ''}
           <div>
             <label class="block text-sm font-medium mb-2">메모</label>
             <textarea id="transactionNote" rows="2" class="w-full px-4 py-2 border rounded-lg"></textarea>
@@ -2605,9 +2612,11 @@ function showInventoryTransaction(itemId, type) {
     e.preventDefault();
     const quantity = parseInt(document.getElementById('transactionQuantity').value);
     const note = document.getElementById('transactionNote').value;
+    const unit_price = document.getElementById('transactionUnitPrice') ? 
+      parseInt(document.getElementById('transactionUnitPrice').value) || 0 : 0;
     
     try {
-      await axios.post(`${API_BASE}/inventory/${itemId}/transaction`, { type, quantity, note });
+      await axios.post(`${API_BASE}/inventory/${itemId}/transaction`, { type, quantity, note, unit_price });
       showToast(`${type}가 처리되었습니다`, 'success');
       closeModal();
       await loadInventory();
@@ -2644,6 +2653,7 @@ async function showInventoryLogs(itemId) {
                   </span>
                   <div>
                     <p class="font-semibold">${log.type} ${log.quantity}${item.unit}</p>
+                    ${log.unit_price ? `<p class="text-sm font-medium ${log.type === '입고' ? 'text-green-600' : 'text-red-600'}">${(log.unit_price * log.quantity).toLocaleString()}원 (단가: ${log.unit_price.toLocaleString()}원)</p>` : ''}
                     <p class="text-sm text-gray-600">${dayjs(log.created_at).format('YYYY-MM-DD HH:mm')}</p>
                     ${log.note ? `<p class="text-sm text-gray-500">${log.note}</p>` : ''}
                   </div>
@@ -2701,18 +2711,25 @@ async function showInventoryMonthlyStats() {
           </div>
           
           <!-- 통계 카드 -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="bg-green-50 p-4 rounded-lg border border-green-200">
               <p class="text-sm text-green-600 font-medium mb-1">총 입고</p>
               <p class="text-3xl font-bold text-green-700">${stats.totalIn}</p>
+              <p class="text-sm text-green-600 mt-1">${(stats.totalInAmount || 0).toLocaleString()}원</p>
             </div>
             <div class="bg-red-50 p-4 rounded-lg border border-red-200">
               <p class="text-sm text-red-600 font-medium mb-1">총 출고</p>
               <p class="text-3xl font-bold text-red-700">${stats.totalOut}</p>
+              <p class="text-sm text-red-600 mt-1">${(stats.totalOutAmount || 0).toLocaleString()}원</p>
             </div>
             <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <p class="text-sm text-blue-600 font-medium mb-1">총 거래 건수</p>
-              <p class="text-3xl font-bold text-blue-700">${stats.transactionCount}</p>
+              <p class="text-sm text-blue-600 font-medium mb-1">순증감</p>
+              <p class="text-3xl font-bold text-blue-700">${stats.totalIn - stats.totalOut >= 0 ? '+' : ''}${stats.totalIn - stats.totalOut}</p>
+              <p class="text-sm text-blue-600 mt-1">${((stats.totalInAmount || 0) - (stats.totalOutAmount || 0)).toLocaleString()}원</p>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <p class="text-sm text-purple-600 font-medium mb-1">총 거래 건수</p>
+              <p class="text-3xl font-bold text-purple-700">${stats.transactionCount}</p>
             </div>
           </div>
           
@@ -2727,7 +2744,9 @@ async function showInventoryMonthlyStats() {
                     <tr>
                       <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">품목명</th>
                       <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">입고</th>
+                      <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">입고금액</th>
                       <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">출고</th>
+                      <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">출고금액</th>
                       <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">순증감</th>
                       <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">거래건수</th>
                     </tr>
@@ -2735,13 +2754,17 @@ async function showInventoryMonthlyStats() {
                   <tbody class="divide-y divide-gray-200">
                     ${stats.byItem.map(item => {
                       const net = item.totalIn - item.totalOut;
+                      const netAmount = (item.totalInAmount || 0) - (item.totalOutAmount || 0);
                       return `
                         <tr class="hover:bg-gray-50">
                           <td class="px-4 py-3 font-medium">${item.item_name}</td>
                           <td class="px-4 py-3 text-center text-green-600 font-semibold">+${item.totalIn}${item.unit}</td>
+                          <td class="px-4 py-3 text-center text-green-600">${(item.totalInAmount || 0).toLocaleString()}원</td>
                           <td class="px-4 py-3 text-center text-red-600 font-semibold">-${item.totalOut}${item.unit}</td>
+                          <td class="px-4 py-3 text-center text-red-600">${(item.totalOutAmount || 0).toLocaleString()}원</td>
                           <td class="px-4 py-3 text-center font-bold ${net >= 0 ? 'text-green-600' : 'text-red-600'}">
-                            ${net >= 0 ? '+' : ''}${net}${item.unit}
+                            ${net >= 0 ? '+' : ''}${net}${item.unit}<br/>
+                            <span class="text-sm">${netAmount >= 0 ? '+' : ''}${netAmount.toLocaleString()}원</span>
                           </td>
                           <td class="px-4 py-3 text-center text-gray-700">${item.count}건</td>
                         </tr>
@@ -2767,6 +2790,7 @@ async function showInventoryMonthlyStats() {
                       </span>
                       <div class="flex-1">
                         <p class="font-semibold">${log.item_name} - ${log.type} ${log.quantity}${log.unit}</p>
+                        ${log.unit_price ? `<p class="text-sm font-medium ${log.type === '입고' ? 'text-green-600' : 'text-red-600'}">${(log.unit_price * log.quantity).toLocaleString()}원 (단가: ${log.unit_price.toLocaleString()}원)</p>` : ''}
                         <p class="text-sm text-gray-600">${dayjs(log.created_at).format('YYYY-MM-DD HH:mm')}</p>
                         ${log.note ? `<p class="text-sm text-gray-500">${log.note}</p>` : ''}
                       </div>
@@ -2822,15 +2846,17 @@ async function exportInventoryStats() {
     
     // CSV 생성
     let csv = `재고 입출고 통계 (${year}년 ${month}월)\n\n`;
-    csv += `총 입고,${stats.totalIn}\n`;
-    csv += `총 출고,${stats.totalOut}\n`;
+    csv += `총 입고,${stats.totalIn},${(stats.totalInAmount || 0).toLocaleString()}원\n`;
+    csv += `총 출고,${stats.totalOut},${(stats.totalOutAmount || 0).toLocaleString()}원\n`;
+    csv += `순증감,${stats.totalIn - stats.totalOut},${((stats.totalInAmount || 0) - (stats.totalOutAmount || 0)).toLocaleString()}원\n`;
     csv += `총 거래건수,${stats.transactionCount}\n\n`;
     
     csv += `품목별 상세\n`;
-    csv += `품목명,입고,출고,순증감,거래건수\n`;
+    csv += `품목명,입고,입고금액,출고,출고금액,순증감,순증감금액,거래건수\n`;
     stats.byItem.forEach(item => {
       const net = item.totalIn - item.totalOut;
-      csv += `${item.item_name},${item.totalIn}${item.unit},${item.totalOut}${item.unit},${net}${item.unit},${item.count}건\n`;
+      const netAmount = (item.totalInAmount || 0) - (item.totalOutAmount || 0);
+      csv += `${item.item_name},${item.totalIn}${item.unit},${(item.totalInAmount || 0).toLocaleString()}원,${item.totalOut}${item.unit},${(item.totalOutAmount || 0).toLocaleString()}원,${net}${item.unit},${netAmount.toLocaleString()}원,${item.count}건\n`;
     });
     
     // 다운로드
