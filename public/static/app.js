@@ -2504,7 +2504,10 @@ function renderInventoryCards() {
           <button onclick="showInventoryTransaction(${item.id}, '출고')" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 text-sm">
             <i class="fas fa-minus mr-1"></i>출고
           </button>
-          <button onclick="showInventoryLogs(${item.id})" class="px-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+          <button onclick="showEditInventoryModal(${item.id})" class="px-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" title="수정">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="showInventoryLogs(${item.id})" class="px-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300" title="내역">
             <i class="fas fa-history"></i>
           </button>
         </div>
@@ -2579,6 +2582,86 @@ function showAddInventoryModal() {
       showToast('재고 추가 실패', 'error');
     }
   });
+}
+
+function showEditInventoryModal(itemId) {
+  const item = app.data.inventory.find(i => i.id === itemId);
+  
+  const modal = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-6">재고 수정</h2>
+        <form id="editInventoryForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">품목명 *</label>
+            <input type="text" name="item_name" value="${item.item_name}" required class="w-full px-4 py-2 border rounded-lg">
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">현재 수량</label>
+              <input type="number" value="${item.quantity}" disabled class="w-full px-4 py-2 border rounded-lg bg-gray-50">
+              <p class="text-xs text-gray-500 mt-1">입출고로 변경하세요</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">단위 *</label>
+              <input type="text" name="unit" value="${item.unit}" required placeholder="개, 병, 장 등" class="w-full px-4 py-2 border rounded-lg">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">최소 필요 수량 *</label>
+            <input type="number" name="min_quantity" value="${item.min_quantity}" required class="w-full px-4 py-2 border rounded-lg">
+            <p class="text-xs text-gray-500 mt-1">이 수량 이하일 때 부족 알림이 표시됩니다</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">메모</label>
+            <textarea name="note" rows="2" class="w-full px-4 py-2 border rounded-lg">${item.note || ''}</textarea>
+          </div>
+          <div class="flex justify-between gap-2 mt-6">
+            <button type="button" onclick="confirmDeleteInventory(${item.id})" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">삭제</button>
+            <div class="flex gap-2">
+              <button type="button" onclick="closeModal()" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">취소</button>
+              <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">저장</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('modalContainer').innerHTML = modal;
+  
+  document.getElementById('editInventoryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    data.quantity = item.quantity; // 수량은 변경하지 않음
+    data.min_quantity = parseInt(data.min_quantity);
+    
+    try {
+      await axios.put(`${API_BASE}/inventory/${itemId}`, data);
+      showToast('재고가 수정되었습니다', 'success');
+      closeModal();
+      await loadInventory();
+      renderCurrentPage();
+    } catch (error) {
+      showToast('재고 수정 실패', 'error');
+    }
+  });
+}
+
+async function confirmDeleteInventory(itemId) {
+  const item = app.data.inventory.find(i => i.id === itemId);
+  if (confirm(`정말로 "${item.item_name}" 재고를 삭제하시겠습니까?\n\n모든 입출고 내역도 함께 삭제됩니다.`)) {
+    try {
+      await axios.delete(`${API_BASE}/inventory/${itemId}`);
+      showToast('재고가 삭제되었습니다', 'success');
+      closeModal();
+      await loadInventory();
+      renderCurrentPage();
+    } catch (error) {
+      showToast('재고 삭제 실패', 'error');
+    }
+  }
 }
 
 function showInventoryTransaction(itemId, type) {
