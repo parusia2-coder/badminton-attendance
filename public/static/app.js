@@ -4452,6 +4452,8 @@ function renderClubsTab() {
 function renderExemptTab() {
   const exemptMembers = app.data.feeStats?.exemptMembersList || [];
   
+  console.log('면제 회원 탭 렌더링:', exemptMembers.length + '명');
+  
   if (exemptMembers.length === 0) {
     return '<div class="text-center py-12 text-gray-500">면제 회원이 없습니다</div>';
   }
@@ -4881,11 +4883,15 @@ function attachFeesHandlers() {
     // 탭 컨텐츠 변경
     const contentDiv = document.getElementById('feeTabContent');
     switch(tab) {
-      case 'payments':
-        contentDiv.innerHTML = renderFeePaymentsTab();
+      case 'stats':
+        contentDiv.innerHTML = renderFeeStatsTab();
+        setTimeout(() => renderClubFeeChart(), 100);
         break;
       case 'unpaid':
         contentDiv.innerHTML = renderUnpaidTab();
+        break;
+      case 'exempt':
+        contentDiv.innerHTML = renderExemptTab();
         break;
       case 'clubs':
         contentDiv.innerHTML = renderClubsTab();
