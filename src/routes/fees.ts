@@ -257,26 +257,33 @@ app.get('/stats', async (c) => {
   const year = parseInt(c.req.query('year') || new Date().getFullYear().toString())
   
   try {
-    // 전체 회원 수
+    // 전체 회원 수 (면제 제외)
     const totalMembers = await env.DB.prepare(`
-      SELECT COUNT(*) as count FROM members
+      SELECT COUNT(*) as count FROM members WHERE fee_paid != 2
     `).first()
     
-    // 납부 회원 수 (회원 테이블의 fee_paid 기준)
+    // 납부 회원 수 (회원 테이블의 fee_paid = 1)
     const paidMembers = await env.DB.prepare(`
       SELECT COUNT(*) as count 
       FROM members 
       WHERE fee_paid = 1
     `).first()
     
+    // 면제 회원 수
+    const exemptMembers = await env.DB.prepare(`
+      SELECT COUNT(*) as count 
+      FROM members 
+      WHERE fee_paid = 2
+    `).first()
+    
     // 총 납부액 (실제 납부 내역에서 계산)
     const totalAmount = await env.DB.prepare(`
-      SELECT SUM(amount) as total 
+      SELECT COALESCE(SUM(amount), 0) as total 
       FROM fee_payments 
       WHERE year = ?
     `).bind(year).first()
     
-    // 미납 회원 목록 (회원 테이블의 fee_paid = 0인 회원)
+    // 미납 회원 목록 (fee_paid = 0인 회원만)
     const unpaidMembers = await env.DB.prepare(`
       SELECT m.* 
       FROM members m
@@ -284,16 +291,26 @@ app.get('/stats', async (c) => {
       ORDER BY m.club, m.name
     `).all()
     
-    // 클럽별 납부 현황 (회원 테이블 기준)
+    // 면제 회원 목록
+    const exemptMembersList = await env.DB.prepare(`
+      SELECT m.* 
+      FROM members m
+      WHERE m.fee_paid = 2
+      ORDER BY m.club, m.name
+    `).all()
+    
+    // 클럽별 납부 현황 (면제 제외)
     const byClub = await env.DB.prepare(`
       SELECT 
         m.club,
-        COUNT(*) as total_members,
-        SUM(CASE WHEN m.fee_paid = 1 THEN 1 ELSE 0 END) as paid_members,
+        COUNT(CASE WHEN m.fee_paid != 2 THEN 1 END) as total_members,
+        COUNT(CASE WHEN m.fee_paid = 1 THEN 1 END) as paid_members,
+        COUNT(CASE WHEN m.fee_paid = 2 THEN 1 END) as exempt_members,
         COALESCE(
           (SELECT SUM(fp.amount) 
            FROM fee_payments fp 
-           WHERE fp.member_id = m.id AND fp.year = ?),
+           JOIN members m2 ON fp.member_id = m2.id
+           WHERE m2.club = m.club AND fp.year = ?),
           0
         ) as total_amount
       FROM members m
@@ -305,8 +322,10 @@ app.get('/stats', async (c) => {
       year,
       totalMembers: totalMembers?.count || 0,
       paidMembers: paidMembers?.count || 0,
+      exemptMembers: exemptMembers?.count || 0,
       unpaidMembers: unpaidMembers.results,
       unpaidCount: unpaidMembers.results.length,
+      exemptMembersList: exemptMembersList.results,
       paymentRate: totalMembers?.count 
         ? Math.round((paidMembers?.count || 0) / totalMembers.count * 100) 
         : 0,

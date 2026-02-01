@@ -867,6 +867,7 @@ function renderMembersPage() {
             <option value="">전체</option>
             <option value="1">회비 납부</option>
             <option value="0">회비 미납</option>
+            <option value="2">회비 면제</option>
           </select>
         </div>
         <button onclick="filterMembers()" class="mt-4 w-full md:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
@@ -930,8 +931,8 @@ function renderMembersTable() {
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-gray-600">${member.phone}</td>
       <td class="px-6 py-4 whitespace-nowrap">
-        <span class="px-3 py-1 text-xs font-semibold rounded-full ${member.fee_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-          ${member.fee_paid ? '납부' : '미납'}
+        <span class="px-3 py-1 text-xs font-semibold rounded-full ${member.fee_paid === 1 ? 'bg-green-100 text-green-800' : member.fee_paid === 2 ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}">
+          ${member.fee_paid === 1 ? '납부' : member.fee_paid === 2 ? '면제' : '미납'}
         </span>
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
@@ -1036,6 +1037,8 @@ function showAddMemberModal() {
               <select name="fee_paid" class="w-full px-4 py-2 border rounded-lg">
                 <option value="0">미납</option>
                 <option value="1">납부</option>
+                <option value="2">면제</option>
+              </select>
               </select>
             </div>
             <div>
@@ -1128,8 +1131,8 @@ function showMemberDetail(memberId) {
             <div class="p-4 bg-gray-50 rounded-lg">
               <p class="text-sm text-gray-500 mb-1">회비 납부 여부</p>
               <p class="text-lg font-semibold">
-                <span class="px-3 py-1 text-sm rounded-full ${member.fee_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                  ${member.fee_paid ? '납부 완료' : '미납'}
+                <span class="px-3 py-1 text-sm rounded-full ${member.fee_paid === 1 ? 'bg-green-100 text-green-800' : member.fee_paid === 2 ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}">
+                  ${member.fee_paid === 1 ? '납부 완료' : member.fee_paid === 2 ? '면제' : '미납'}
                 </span>
               </p>
             </div>
@@ -1219,6 +1222,8 @@ function showEditMemberModal(memberId) {
               <select name="fee_paid" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
                 <option value="0" ${member.fee_paid === 0 ? 'selected' : ''}>미납</option>
                 <option value="1" ${member.fee_paid === 1 ? 'selected' : ''}>납부</option>
+                <option value="2" ${member.fee_paid === 2 ? 'selected' : ''}>면제</option>
+              </select>
               </select>
             </div>
             <div>
@@ -1558,7 +1563,7 @@ async function exportMembers(selectedOnly = false) {
     // CSV 생성
     let csv = '이름,성별,출생년도,클럽,조,연락처,회비납부,차량등록\n';
     members.forEach(m => {
-      csv += `${m.name},${m.gender},${m.birth_year},${m.club},${m.grade},${m.phone},${m.fee_paid ? '납부' : '미납'},${m.car_registered ? '등록' : '미등록'}\n`;
+      csv += `${m.name},${m.gender},${m.birth_year},${m.club},${m.grade},${m.phone},${m.fee_paid === 1 ? '납부' : m.fee_paid === 2 ? '면제' : '미납'},${m.car_registered ? '등록' : '미등록'}\n`;
     });
     
     // 다운로드
@@ -4097,12 +4102,13 @@ function renderFeesPage() {
       </div>
       
       <!-- 통계 카드 -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
         <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <p class="text-gray-500 text-xs md:text-sm">총 회원</p>
               <p class="text-2xl md:text-3xl font-bold text-gray-800">${stats.totalMembers}명</p>
+              <p class="text-xs text-gray-400 mt-1">면제 제외</p>
             </div>
             <i class="fas fa-users text-2xl md:text-4xl text-blue-500 hidden md:block"></i>
           </div>
@@ -4131,6 +4137,16 @@ function renderFeesPage() {
         <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
+              <p class="text-gray-500 text-xs md:text-sm">면제 회원</p>
+              <p class="text-2xl md:text-3xl font-bold text-gray-600">${stats.exemptMembers || 0}명</p>
+            </div>
+            <i class="fas fa-shield-alt text-2xl md:text-4xl text-gray-500 hidden md:block"></i>
+          </div>
+        </div>
+        
+        <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
               <p class="text-gray-500 text-xs md:text-sm">납부율</p>
               <p class="text-2xl md:text-3xl font-bold text-purple-600">${stats.paymentRate}%</p>
             </div>
@@ -4148,6 +4164,9 @@ function renderFeesPage() {
             </button>
             <button onclick="switchFeeTab('unpaid')" id="tabUnpaid" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold text-gray-500 hover:text-gray-700 text-sm md:text-base whitespace-nowrap">
               미납자 목록 (${stats.unpaidCount}명)
+            </button>
+            <button onclick="switchFeeTab('exempt')" id="tabExempt" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold text-gray-500 hover:text-gray-700 text-sm md:text-base whitespace-nowrap">
+              면제 회원 (${stats.exemptMembers || 0}명)
             </button>
             <button onclick="switchFeeTab('clubs')" id="tabClubs" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold text-gray-500 hover:text-gray-700 text-sm md:text-base whitespace-nowrap">
               클럽별 현황
@@ -4255,37 +4274,80 @@ function renderClubsTab() {
   return `
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       ${byClub.map(club => {
-        const rate = club.total_members > 0 
-          ? Math.round(club.paid_members / club.total_members * 100) 
+        const effectiveMembers = club.total_members || 0; // 면제 제외된 회원 수
+        const rate = effectiveMembers > 0 
+          ? Math.round((club.paid_members || 0) / effectiveMembers * 100) 
           : 0;
+        const unpaidMembers = effectiveMembers - (club.paid_members || 0);
         return `
           <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
             <h3 class="text-lg font-bold text-gray-800 mb-4">${club.club}</h3>
             <div class="space-y-3">
               <div class="flex justify-between">
                 <span class="text-gray-600">전체 회원</span>
-                <span class="font-semibold">${club.total_members}명</span>
+                <span class="font-semibold">${effectiveMembers}명</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">납부 회원</span>
-                <span class="font-semibold text-green-600">${club.paid_members}명</span>
+                <span class="font-semibold text-green-600">${club.paid_members || 0}명</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">미납 회원</span>
-                <span class="font-semibold text-red-600">${club.total_members - club.paid_members}명</span>
+                <span class="font-semibold text-red-600">${unpaidMembers}명</span>
               </div>
+              ${club.exempt_members > 0 ? `
+              <div class="flex justify-between">
+                <span class="text-gray-600">면제 회원</span>
+                <span class="font-semibold text-gray-600">${club.exempt_members}명</span>
+              </div>
+              ` : ''}
               <div class="flex justify-between">
                 <span class="text-gray-600">납부율</span>
                 <span class="font-semibold text-purple-600">${rate}%</span>
               </div>
               <div class="flex justify-between border-t pt-3">
-                <span class="text-gray-600">총 납부액</span>
-                <span class="font-bold text-blue-600">${club.total_amount.toLocaleString()}원</span>
+                <span class="text-gray-600 font-semibold">총 납부액</span>
+                <span class="font-bold text-blue-600">${(club.total_amount || 0).toLocaleString()}원</span>
               </div>
             </div>
           </div>
         `;
       }).join('')}
+    </div>
+  `;
+}
+
+function renderExemptTab() {
+  const exemptMembers = app.data.feeStats?.exemptMembersList || [];
+  
+  if (exemptMembers.length === 0) {
+    return '<div class="text-center py-12 text-gray-500">면제 회원이 없습니다</div>';
+  }
+  
+  return `
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">클럽</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">조</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          ${exemptMembers.map(m => `
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium">${m.name}</td>
+              <td class="px-4 py-3">${m.club}</td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs font-semibold rounded-full ${getGradeBadgeColor(m.grade)}">${m.grade}조</span>
+              </td>
+              <td class="px-4 py-3 text-sm text-gray-600">${m.phone}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
     </div>
   `;
 }
@@ -4310,6 +4372,8 @@ function switchFeeTab(tab) {
     content.innerHTML = renderFeePaymentsTab();
   } else if (tab === 'unpaid') {
     content.innerHTML = renderUnpaidTab();
+  } else if (tab === 'exempt') {
+    content.innerHTML = renderExemptTab();
   } else if (tab === 'clubs') {
     content.innerHTML = renderClubsTab();
   }
