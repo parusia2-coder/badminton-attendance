@@ -206,7 +206,7 @@ window.sendUnpaidSMS = async function() {
   const currentYear = new Date().getFullYear();
   const setting = app.data.feeSetting || { amount: 50000 };
   const recipients = unpaidMembers.map(m => m.phone);
-  const message = `[안양시배드민턴연합회]\n${currentYear}년도 연회비 납부 안내드립니다.\n\n납부 금액: ${setting.amount.toLocaleString()}원\n계좌번호: [계좌번호]\n\n빠른 납부 부탁드립니다.\n감사합니다.`;
+  const message = `[안양시배드민턴협회]\n${currentYear}년도 연회비 납부 안내드립니다.\n\n납부 금액: ${setting.amount.toLocaleString()}원\n계좌번호: [계좌번호]\n\n빠른 납부 부탁드립니다.\n감사합니다.`;
   
   if (!confirm(`미납자 ${unpaidMembers.length}명에게 문자를 발송하시겠습니까?`)) return;
   
@@ -420,8 +420,8 @@ function renderLoginPage() {
       <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <div class="text-center mb-8">
           <i class="fas fa-shuttle-van text-6xl text-blue-600 mb-4"></i>
-          <h1 class="text-3xl font-bold text-gray-800">안양시배드민턴연합회</h1>
-          <p class="text-gray-600 mt-2">장년부 회원관리시스템</p>
+          <h1 class="text-3xl font-bold text-gray-800">안양시배드민턴협회</h1>
+          <p class="text-gray-600 mt-2">장년부통합관리시스템</p>
         </div>
         
         <form id="loginForm" class="space-y-6">
@@ -479,7 +479,7 @@ function renderMainLayout() {
       <!-- 사이드바 -->
       <aside id="sidebar" class="sidebar w-64 bg-white shadow-lg transition-transform duration-300 fixed lg:static inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0">
         <div class="p-6 bg-gradient-to-r from-blue-600 to-purple-600">
-          <h1 class="text-white text-xl font-bold">장년부 관리시스템</h1>
+          <h1 class="text-white text-xl font-bold">장년부통합관리시스템</h1>
           <p class="text-blue-100 text-sm mt-1">${app.session.name}님</p>
         </div>
         
@@ -3959,7 +3959,7 @@ function applySMSTemplate() {
   const messageTextarea = document.getElementById('smsMessage');
   
   const templates = {
-    meeting: `[안양시배드민턴연합회]
+    meeting: `[안양시배드민턴협회]
 안녕하세요. 
 이번 정기모임이 다음과 같이 예정되어 있습니다.
 
@@ -3968,7 +3968,7 @@ function applySMSTemplate() {
 
 많은 참석 부탁드립니다.`,
     
-    fee: `[안양시배드민턴연합회]
+    fee: `[안양시배드민턴협회]
 회원님, 연회비 납부 안내드립니다.
 
 납부 계좌: [계좌번호]
@@ -3976,7 +3976,7 @@ function applySMSTemplate() {
 
 문의: 010-0000-0000`,
     
-    reminder: `[안양시배드민턴연합회]
+    reminder: `[안양시배드민턴협회]
 내일 모임이 있습니다!
 
 일시: [날짜] [시간]
@@ -3984,7 +3984,7 @@ function applySMSTemplate() {
 
 잊지 마시고 참석 부탁드립니다.`,
     
-    notice: `[안양시배드민턴연합회]
+    notice: `[안양시배드민턴협회]
 회원 여러분께 공지드립니다.
 
 [공지 내용]
@@ -4838,7 +4838,7 @@ async function sendUnpaidSMS() {
   const setting = app.data.feeSetting || { amount: 50000 };
   
   const recipients = unpaidMembers.map(m => m.phone);
-  const message = `[안양시배드민턴연합회]
+  const message = `[안양시배드민턴협회]
 ${currentYear}년도 연회비 납부 안내드립니다.
 
 납부 금액: ${setting.amount.toLocaleString()}원
