@@ -504,13 +504,13 @@ function renderMainLayout() {
             <i class="fas fa-box w-6"></i>
             <span class="ml-3">재고관리</span>
           </a>
-          <a href="#" data-page="boards" class="nav-item flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
-            <i class="fas fa-comments w-6"></i>
-            <span class="ml-3">게시판</span>
-          </a>
           <a href="#" data-page="fees" class="nav-item flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
             <i class="fas fa-won-sign w-6"></i>
             <span class="ml-3">회비관리</span>
+          </a>
+          <a href="#" data-page="boards" class="nav-item flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-comments w-6"></i>
+            <span class="ml-3">게시판</span>
           </a>
         </nav>
         
