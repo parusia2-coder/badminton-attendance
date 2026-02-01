@@ -633,6 +633,8 @@ async function renderCurrentPage() {
       await loadFees();
       contentDiv.innerHTML = renderFeesPage();
       attachFeesHandlers();
+      // 통계 탭 차트 렌더링
+      setTimeout(() => renderClubFeeChart(), 100);
       break;
   }
 }
@@ -4159,8 +4161,8 @@ function renderFeesPage() {
       <div class="bg-white rounded-lg shadow-md">
         <div class="border-b overflow-x-auto">
           <div class="flex min-w-max">
-            <button onclick="switchFeeTab('payments')" id="tabPayments" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold border-b-2 border-blue-600 text-blue-600 text-sm md:text-base whitespace-nowrap">
-              납부 내역
+            <button onclick="switchFeeTab('stats')" id="tabStats" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold border-b-2 border-blue-600 text-blue-600 text-sm md:text-base whitespace-nowrap">
+              <i class="fas fa-chart-bar mr-2"></i>통계
             </button>
             <button onclick="switchFeeTab('unpaid')" id="tabUnpaid" class="px-4 md:px-6 py-2.5 md:py-3 font-semibold text-gray-500 hover:text-gray-700 text-sm md:text-base whitespace-nowrap">
               미납자 목록 (${stats.unpaidCount}명)
@@ -4175,8 +4177,138 @@ function renderFeesPage() {
         </div>
         
         <div id="feeTabContent" class="p-4 md:p-6">
-          ${renderFeePaymentsTab()}
+          ${renderFeeStatsTab()}
         </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFeeStatsTab() {
+  const stats = app.data.feeStats || {};
+  const byClub = stats.byClub || [];
+  
+  // 클럽별 데이터 정렬 (납부율 높은 순)
+  const sortedClubs = [...byClub].sort((a, b) => {
+    const rateA = a.total_members > 0 ? (a.paid_members / a.total_members) * 100 : 0;
+    const rateB = b.total_members > 0 ? (b.paid_members / b.total_members) * 100 : 0;
+    return rateB - rateA;
+  });
+  
+  // 상위 5개 클럽 (납부율 기준)
+  const top5Clubs = sortedClubs.slice(0, 5);
+  
+  // 하위 5개 클럽 (납부율 기준)
+  const bottom5Clubs = sortedClubs.slice(-5).reverse();
+  
+  return `
+    <div class="space-y-6">
+      <!-- 전체 통계 요약 -->
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+          ${stats.year}년 회비 납부 현황
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <div class="text-sm text-gray-500 mb-1">총 회원</div>
+            <div class="text-2xl font-bold text-gray-800">${stats.totalMembers || 0}명</div>
+          </div>
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <div class="text-sm text-gray-500 mb-1">납부 회원</div>
+            <div class="text-2xl font-bold text-green-600">${stats.paidMembers || 0}명</div>
+          </div>
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <div class="text-sm text-gray-500 mb-1">미납 회원</div>
+            <div class="text-2xl font-bold text-red-600">${stats.unpaidCount || 0}명</div>
+          </div>
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <div class="text-sm text-gray-500 mb-1">면제 회원</div>
+            <div class="text-2xl font-bold text-orange-600">${stats.exemptMembers || 0}명</div>
+          </div>
+        </div>
+        <div class="mt-4 bg-white rounded-lg p-4 shadow-sm">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-sm text-gray-500 mb-1">총 납부액</div>
+              <div class="text-3xl font-bold text-blue-600">${(stats.totalAmount || 0).toLocaleString()}원</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-500 mb-1">납부율</div>
+              <div class="text-3xl font-bold ${stats.paymentRate >= 70 ? 'text-green-600' : stats.paymentRate >= 50 ? 'text-orange-600' : 'text-red-600'}">
+                ${stats.paymentRate || 0}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 납부율 상위 클럽 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">
+          <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+          납부율 상위 클럽 TOP 5
+        </h3>
+        <div class="space-y-3">
+          ${top5Clubs.map((club, index) => {
+            const rate = club.total_members > 0 ? Math.round((club.paid_members / club.total_members) * 100) : 0;
+            return `
+              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="flex items-center space-x-4">
+                  <div class="text-2xl font-bold ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-600' : 'text-gray-600'}">
+                    ${index + 1}
+                  </div>
+                  <div>
+                    <div class="font-bold text-gray-800">${club.club}</div>
+                    <div class="text-sm text-gray-500">납부 ${club.paid_members}명 / 전체 ${club.total_members}명</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl font-bold ${rate >= 90 ? 'text-green-600' : rate >= 70 ? 'text-blue-600' : 'text-gray-600'}">
+                    ${rate}%
+                  </div>
+                  <div class="text-sm text-gray-500">${club.total_amount.toLocaleString()}원</div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+      
+      <!-- 납부율 하위 클럽 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">
+          <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
+          납부율 하위 클럽 (독려 필요)
+        </h3>
+        <div class="space-y-3">
+          ${bottom5Clubs.map((club) => {
+            const rate = club.total_members > 0 ? Math.round((club.paid_members / club.total_members) * 100) : 0;
+            return `
+              <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                <div>
+                  <div class="font-bold text-gray-800">${club.club}</div>
+                  <div class="text-sm text-gray-600">
+                    납부 ${club.paid_members}명 / 미납 ${club.total_members - club.paid_members}명 / 전체 ${club.total_members}명
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl font-bold text-red-600">${rate}%</div>
+                  <div class="text-sm text-gray-500">${club.total_amount.toLocaleString()}원</div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+      
+      <!-- 클럽별 비교 차트 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">
+          <i class="fas fa-chart-bar mr-2 text-purple-600"></i>
+          클럽별 납부 현황 비교
+        </h3>
+        <canvas id="clubFeeChart" height="80"></canvas>
       </div>
     </div>
   `;
@@ -4352,6 +4484,84 @@ function renderExemptTab() {
   `;
 }
 
+// 클럽별 납부 차트 렌더링
+function renderClubFeeChart() {
+  const canvas = document.getElementById('clubFeeChart');
+  if (!canvas) return;
+  
+  const stats = app.data.feeStats || {};
+  const byClub = stats.byClub || [];
+  
+  // 상위 10개 클럽만 표시
+  const top10Clubs = [...byClub]
+    .sort((a, b) => b.total_amount - a.total_amount)
+    .slice(0, 10);
+  
+  const clubNames = top10Clubs.map(c => c.club);
+  const paidMembers = top10Clubs.map(c => c.paid_members);
+  const unpaidMembers = top10Clubs.map(c => c.total_members - c.paid_members);
+  
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: clubNames,
+      datasets: [
+        {
+          label: '납부 회원',
+          data: paidMembers,
+          backgroundColor: 'rgba(34, 197, 94, 0.7)',
+          borderColor: 'rgba(34, 197, 94, 1)',
+          borderWidth: 1
+        },
+        {
+          label: '미납 회원',
+          data: unpaidMembers,
+          backgroundColor: 'rgba(239, 68, 68, 0.7)',
+          borderColor: 'rgba(239, 68, 68, 1)',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        x: {
+          stacked: true,
+          grid: {
+            display: false
+          }
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            footer: (tooltipItems) => {
+              const index = tooltipItems[0].dataIndex;
+              const club = top10Clubs[index];
+              const rate = club.total_members > 0 
+                ? Math.round((club.paid_members / club.total_members) * 100) 
+                : 0;
+              return `납부율: ${rate}%\n총 납부액: ${club.total_amount.toLocaleString()}원`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
 // 탭 전환
 function switchFeeTab(tab) {
   // 탭 버튼 스타일 업데이트
@@ -4368,8 +4578,10 @@ function switchFeeTab(tab) {
   
   // 탭 컨텐츠 업데이트
   const content = document.getElementById('feeTabContent');
-  if (tab === 'payments') {
-    content.innerHTML = renderFeePaymentsTab();
+  if (tab === 'stats') {
+    content.innerHTML = renderFeeStatsTab();
+    // 차트 렌더링
+    setTimeout(() => renderClubFeeChart(), 100);
   } else if (tab === 'unpaid') {
     content.innerHTML = renderUnpaidTab();
   } else if (tab === 'exempt') {
