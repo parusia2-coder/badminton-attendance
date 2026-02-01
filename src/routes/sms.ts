@@ -2,9 +2,9 @@ import { Hono } from 'hono'
 
 type Bindings = {
   DB: D1Database
-  NHN_APP_KEY: string
-  NHN_SECRET_KEY: string
-  NHN_SENDER: string
+  SOLAPI_API_KEY: string
+  SOLAPI_API_SECRET: string
+  SOLAPI_SENDER: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -14,32 +14,64 @@ app.post('/send', async (c) => {
   const { env } = c
   const { recipients, message, memberId, scheduleId } = await c.req.json()
 
-  // 환경변수 확인
-  if (!env.NHN_APP_KEY || !env.NHN_SECRET_KEY || !env.NHN_SENDER) {
-    return c.json({ 
-      error: 'SMS 서비스가 설정되지 않았습니다. 관리자에게 문의하세요.' 
-    }, 500)
-  }
-
   // recipients가 배열이 아니면 배열로 변환
   const recipientList = Array.isArray(recipients) ? recipients : [recipients]
 
+  // 테스트 모드: API 키가 없으면 시뮬레이션
+  const isTestMode = !env.SOLAPI_API_KEY || !env.SOLAPI_API_SECRET || !env.SOLAPI_SENDER
+
+  if (isTestMode) {
+    console.log('📱 [테스트 모드] SMS 발송 시뮬레이션')
+    console.log('수신자:', recipientList)
+    console.log('메시지:', message)
+
+    // 테스트 모드에서는 성공으로 로그만 저장
+    for (const phone of recipientList) {
+      await env.DB.prepare(`
+        INSERT INTO sms_logs (recipient, message, sender, status, error_message, request_id, result_code, member_id, schedule_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        phone,
+        message,
+        '010-0000-0000',
+        'success',
+        null,
+        'TEST-' + Date.now(),
+        'TEST_MODE',
+        memberId || null,
+        scheduleId || null
+      ).run()
+    }
+
+    return c.json({ 
+      message: `[테스트 모드] ${recipientList.length}명에게 문자 발송 시뮬레이션 완료`,
+      requestId: 'TEST-' + Date.now(),
+      count: recipientList.length,
+      testMode: true
+    })
+  }
+
   try {
-    // NHN Cloud SMS API 호출
+    // 솔라피 API 인증 (Basic Auth)
+    const auth = btoa(`${env.SOLAPI_API_KEY}:${env.SOLAPI_API_SECRET}`)
+    
+    // 솔라피 SMS API 호출
     const response = await fetch(
-      `https://api-sms.cloud.toast.com/sms/v3.0/appKeys/${env.NHN_APP_KEY}/sender/sms`,
+      'https://api.solapi.com/messages/v4/send',
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Secret-Key': env.NHN_SECRET_KEY
+          'Authorization': `Basic ${auth}`
         },
         body: JSON.stringify({
-          body: message,
-          sendNo: env.NHN_SENDER,
-          recipientList: recipientList.map((phone: string) => ({
-            recipientNo: phone.replace(/[^0-9]/g, ''), // 숫자만 추출
-            templateParameter: {}
+          message: {
+            from: env.SOLAPI_SENDER.replace(/[^0-9]/g, ''), // 숫자만 추출
+            text: message,
+            type: message.length > 90 ? 'LMS' : 'SMS' // 90자 초과시 LMS
+          },
+          to: recipientList.map((phone: string) => ({
+            recipient: phone.replace(/[^0-9]/g, '') // 숫자만 추출
           }))
         })
       }
@@ -48,36 +80,36 @@ app.post('/send', async (c) => {
     const result = await response.json() as any
 
     // 각 수신자별로 로그 저장
-    for (const phone of recipientList) {
-      const status = result.header?.isSuccessful ? 'success' : 'failed'
-      const errorMessage = result.header?.isSuccessful ? null : result.header?.resultMessage
+    const status = response.ok ? 'success' : 'failed'
+    const errorMessage = response.ok ? null : result.errorMessage || JSON.stringify(result)
 
+    for (const phone of recipientList) {
       await env.DB.prepare(`
         INSERT INTO sms_logs (recipient, message, sender, status, error_message, request_id, result_code, member_id, schedule_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         phone,
         message,
-        env.NHN_SENDER,
+        env.SOLAPI_SENDER,
         status,
         errorMessage,
-        result.header?.requestId || null,
-        result.header?.resultCode || null,
+        result.groupId || null,
+        result.statusCode || null,
         memberId || null,
         scheduleId || null
       ).run()
     }
 
-    if (!result.header?.isSuccessful) {
+    if (!response.ok) {
       return c.json({ 
         error: '문자 발송에 실패했습니다.',
-        detail: result.header?.resultMessage 
+        detail: result.errorMessage || result.message
       }, 500)
     }
 
     return c.json({ 
       message: `${recipientList.length}명에게 문자가 발송되었습니다.`,
-      requestId: result.header?.requestId,
+      requestId: result.groupId,
       count: recipientList.length
     })
 
@@ -92,7 +124,7 @@ app.post('/send', async (c) => {
       `).bind(
         phone,
         message,
-        env.NHN_SENDER,
+        env.SOLAPI_SENDER,
         'failed',
         error instanceof Error ? error.message : '알 수 없는 오류',
         memberId || null,
