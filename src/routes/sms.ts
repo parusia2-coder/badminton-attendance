@@ -83,7 +83,7 @@ app.post('/send', async (c) => {
     
     // 솔라피 SMS API 호출
     const response = await fetch(
-      'https://api.solapi.com/messages/v4/send',
+      'https://api.solapi.com/messages/v4/send-many/detail',
       {
         method: 'POST',
         headers: {
@@ -91,13 +91,10 @@ app.post('/send', async (c) => {
           'Authorization': authHeader
         },
         body: JSON.stringify({
-          message: {
+          messages: recipientList.map((phone: string) => ({
+            to: phone.replace(/[^0-9]/g, ''), // 숫자만 추출
             from: env.SOLAPI_SENDER.replace(/[^0-9]/g, ''), // 숫자만 추출
-            text: message,
-            type: message.length > 90 ? 'LMS' : 'SMS' // 90자 초과시 LMS
-          },
-          to: recipientList.map((phone: string) => ({
-            recipient: phone.replace(/[^0-9]/g, '') // 숫자만 추출
+            text: message
           }))
         })
       }
