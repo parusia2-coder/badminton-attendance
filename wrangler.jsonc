@@ -20,4 +20,12 @@
       "preview_bucket_name": "badminton-files-preview"
     }
   ]
+  // 환경 변수 설정 (SMS 발송):
+  // 로컬 개발: .dev.vars 파일에 설정
+  // 프로덕션: wrangler secret put 명령어로 설정
+  //   - SOLAPI_API_KEY: 솔라피 API Key
+  //   - SOLAPI_API_SECRET: 솔라피 API Secret
+  //   - SOLAPI_SENDER: 발신번호 (예: 01012345678)
+  //
+  // 테스트 모드: 환경 변수가 없으면 자동으로 시뮬레이션 모드로 작동
 }
