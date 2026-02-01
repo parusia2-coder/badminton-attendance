@@ -2488,9 +2488,16 @@ function renderInventoryCards() {
         <div class="mb-4">
           <p class="text-3xl font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}">${item.quantity} ${item.unit}</p>
           <p class="text-sm text-gray-600 mt-1">최소 필요: ${item.min_quantity}${item.unit}</p>
+          ${item.avg_unit_price > 0 ? `
+          <div class="mt-3 pt-3 border-t">
+            <p class="text-xs text-gray-500">평균 단가</p>
+            <p class="text-lg font-semibold text-blue-600">${item.avg_unit_price.toLocaleString()}원/${item.unit}</p>
+            <p class="text-xs text-gray-500 mt-1">재고 가치: ${(item.total_value || 0).toLocaleString()}원</p>
+          </div>
+          ` : ''}
         </div>
         
-        <div class="flex gap-2">
+        <div class="flex gap-2 mb-2">
           <button onclick="showInventoryTransaction(${item.id}, '입고')" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 text-sm">
             <i class="fas fa-plus mr-1"></i>입고
           </button>
@@ -2501,6 +2508,12 @@ function renderInventoryCards() {
             <i class="fas fa-history"></i>
           </button>
         </div>
+        
+        ${item.avg_unit_price > 0 ? `
+        <button onclick="showPriceTrend(${item.id})" class="w-full py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm">
+          <i class="fas fa-chart-line mr-1"></i>단가 추이
+        </button>
+        ` : ''}
       </div>
     `;
   }).join('');
@@ -2869,6 +2882,150 @@ async function exportInventoryStats() {
     showToast('통계가 다운로드되었습니다', 'success');
   } catch (error) {
     showToast('내보내기 실패', 'error');
+  }
+}
+
+// 단가 추이 그래프 모달
+async function showPriceTrend(itemId) {
+  try {
+    const response = await axios.get(`${API_BASE}/inventory/${itemId}/price-trend?months=12`);
+    const data = response.data;
+    const item = data.item;
+    const trend = data.trend;
+    
+    if (trend.length === 0) {
+      showToast('입고 단가 데이터가 없습니다', 'info');
+      return;
+    }
+    
+    const modal = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl my-8">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">${item.item_name} - 단가 변동 추이</h2>
+            <button onclick="closeModal()" class="text-gray-600 hover:text-gray-800">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          
+          <!-- 현재 평균 단가 -->
+          <div class="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-200">
+            <p class="text-sm text-blue-600 font-medium mb-1">현재 평균 단가</p>
+            <p class="text-3xl font-bold text-blue-700">${(item.current_avg_price || 0).toLocaleString()}원/${item.unit}</p>
+          </div>
+          
+          <!-- 그래프 -->
+          <div class="bg-gray-50 p-4 rounded-lg mb-6">
+            <canvas id="priceTrendChart" width="400" height="200"></canvas>
+          </div>
+          
+          <!-- 월별 상세 데이터 -->
+          <div>
+            <h3 class="text-lg font-bold mb-3">월별 입고 단가 상세</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">월</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">평균 단가</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">최저 단가</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">최고 단가</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">입고 수량</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">입고 횟수</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  ${trend.map(row => `
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-4 py-3 font-medium">${row.month}</td>
+                      <td class="px-4 py-3 text-center text-blue-600 font-semibold">${Math.round(row.avg_price).toLocaleString()}원</td>
+                      <td class="px-4 py-3 text-center text-green-600">${row.min_price.toLocaleString()}원</td>
+                      <td class="px-4 py-3 text-center text-red-600">${row.max_price.toLocaleString()}원</td>
+                      <td class="px-4 py-3 text-center">${row.total_quantity}${item.unit}</td>
+                      <td class="px-4 py-3 text-center text-gray-700">${row.count}회</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="mt-6 flex justify-end">
+            <button onclick="closeModal()" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">닫기</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById('modalContainer').innerHTML = modal;
+    
+    // Chart.js로 그래프 그리기
+    const ctx = document.getElementById('priceTrendChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: trend.map(t => t.month),
+        datasets: [
+          {
+            label: '평균 단가',
+            data: trend.map(t => Math.round(t.avg_price)),
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: '최저 단가',
+            data: trend.map(t => t.min_price),
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            borderDash: [5, 5],
+            tension: 0.3
+          },
+          {
+            label: '최고 단가',
+            data: trend.map(t => t.max_price),
+            borderColor: 'rgb(239, 68, 68)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderDash: [5, 5],
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: '월별 입고 단가 추이'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + '원';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            ticks: {
+              callback: function(value) {
+                return value.toLocaleString() + '원';
+              }
+            }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Price trend error:', error);
+    showToast('단가 추이 조회 실패', 'error');
   }
 }
 

@@ -102,30 +102,49 @@ app.post('/:id/transaction', async (c) => {
     
     // 재고 수량 계산
     const currentQuantity = item.quantity as number
+    const currentAvgPrice = (item.avg_unit_price as number) || 0
+    const currentTotalValue = (item.total_value as number) || 0
     let newQuantity = currentQuantity
+    let newAvgPrice = currentAvgPrice
+    let newTotalValue = currentTotalValue
     
     if (type === '입고') {
       newQuantity = currentQuantity + quantity
+      const inputPrice = unit_price || 0
+      
+      // 가중평균 단가 계산
+      if (newQuantity > 0) {
+        const totalValue = currentTotalValue + (inputPrice * quantity)
+        newAvgPrice = Math.round(totalValue / newQuantity)
+        newTotalValue = newAvgPrice * newQuantity
+      }
     } else if (type === '출고') {
       newQuantity = currentQuantity - quantity
       if (newQuantity < 0) {
         return c.json({ error: '재고가 부족합니다' }, 400)
       }
+      
+      // 출고 시 평균 단가 유지, 총 가치만 업데이트
+      newTotalValue = newAvgPrice * newQuantity
     }
     
-    // 재고 업데이트
+    // 재고 업데이트 (수량, 평균 단가, 총 가치)
     await c.env.DB.prepare(
-      'UPDATE inventory SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(newQuantity, id).run()
+      'UPDATE inventory SET quantity = ?, avg_unit_price = ?, total_value = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(newQuantity, newAvgPrice, newTotalValue, id).run()
     
     // 입출고 내역 기록 (단가 포함)
+    // 출고 시에는 현재 평균 단가를 기록
+    const recordPrice = type === '입고' ? (unit_price || 0) : currentAvgPrice
     await c.env.DB.prepare(
       'INSERT INTO inventory_logs (inventory_id, type, quantity, note, unit_price) VALUES (?, ?, ?, ?, ?)'
-    ).bind(id, type, quantity, note || '', unit_price || 0).run()
+    ).bind(id, type, quantity, note || '', recordPrice).run()
     
     return c.json({ 
       message: `${type}가 처리되었습니다`,
-      newQuantity
+      newQuantity,
+      newAvgPrice,
+      newTotalValue
     })
   } catch (error) {
     return c.json({ error: '입출고 처리 중 오류가 발생했습니다' }, 500)
@@ -228,6 +247,54 @@ app.delete('/:id', async (c) => {
     return c.json({ message: '재고가 삭제되었습니다' })
   } catch (error) {
     return c.json({ error: '재고 삭제 중 오류가 발생했습니다' }, 500)
+  }
+})
+
+// 단가 변동 추이 조회
+app.get('/:id/price-trend', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const months = parseInt(c.req.query('months') || '6') // 기본 6개월
+    
+    // 재고 정보 조회
+    const item = await c.env.DB.prepare(
+      'SELECT * FROM inventory WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!item) {
+      return c.json({ error: '재고를 찾을 수 없습니다' }, 404)
+    }
+    
+    // 최근 N개월 입고 내역 조회 (단가 있는 것만)
+    const { results: logs } = await c.env.DB.prepare(`
+      SELECT 
+        strftime('%Y-%m', created_at) as month,
+        AVG(unit_price) as avg_price,
+        MIN(unit_price) as min_price,
+        MAX(unit_price) as max_price,
+        SUM(quantity) as total_quantity,
+        COUNT(*) as count
+      FROM inventory_logs
+      WHERE inventory_id = ? 
+        AND type = '입고'
+        AND unit_price > 0
+        AND created_at >= datetime('now', '-' || ? || ' months')
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY month ASC
+    `).bind(id, months).all()
+    
+    return c.json({ 
+      item: {
+        id: item.id,
+        item_name: item.item_name,
+        unit: item.unit,
+        current_avg_price: item.avg_unit_price
+      },
+      trend: logs 
+    })
+  } catch (error) {
+    console.error('Price trend error:', error)
+    return c.json({ error: '단가 추이 조회 중 오류가 발생했습니다' }, 500)
   }
 })
 
