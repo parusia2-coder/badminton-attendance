@@ -52,8 +52,34 @@ app.post('/send', async (c) => {
   }
 
   try {
-    // 솔라피 API 인증 (Basic Auth)
-    const auth = btoa(`${env.SOLAPI_API_KEY}:${env.SOLAPI_API_SECRET}`)
+    // 솔라피 HMAC-SHA256 인증
+    const dateTime = new Date().toISOString()
+    const salt = Array.from({ length: 16 }, () => 
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('')
+    
+    // Signature 생성: HMAC-SHA256(API_SECRET, dateTime + salt)
+    const data = dateTime + salt
+    const encoder = new TextEncoder()
+    const keyData = encoder.encode(env.SOLAPI_API_SECRET)
+    const messageData = encoder.encode(data)
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+    
+    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, messageData)
+    const signature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+    
+    const authHeader = `HMAC-SHA256 apiKey=${env.SOLAPI_API_KEY}, date=${dateTime}, salt=${salt}, signature=${signature}`
+    
+    console.log('📱 인증 헤더 생성 완료:', dateTime, salt.substring(0, 8) + '...')
     
     // 솔라피 SMS API 호출
     const response = await fetch(
@@ -62,7 +88,7 @@ app.post('/send', async (c) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${auth}`
+          'Authorization': authHeader
         },
         body: JSON.stringify({
           message: {
@@ -79,9 +105,13 @@ app.post('/send', async (c) => {
 
     const result = await response.json() as any
 
+    // 디버깅: API 응답 로그
+    console.log('📱 솔라피 API 응답:', JSON.stringify(result, null, 2))
+    console.log('📱 HTTP 상태:', response.status, response.statusText)
+
     // 각 수신자별로 로그 저장
     const status = response.ok ? 'success' : 'failed'
-    const errorMessage = response.ok ? null : result.errorMessage || JSON.stringify(result)
+    const errorMessage = response.ok ? null : result.errorMessage || result.message || JSON.stringify(result)
 
     for (const phone of recipientList) {
       await env.DB.prepare(`
