@@ -4108,9 +4108,9 @@ function renderFeesPage() {
         <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <p class="text-gray-500 text-xs md:text-sm">총 회원</p>
-              <p class="text-2xl md:text-3xl font-bold text-gray-800">${stats.totalMembers}명</p>
-              <p class="text-xs text-gray-400 mt-1">면제 제외</p>
+              <p class="text-gray-500 text-xs md:text-sm">전체 회원</p>
+              <p class="text-2xl md:text-3xl font-bold text-gray-800">${stats.allMembers}명</p>
+              <p class="text-xs text-gray-400 mt-1">면제 포함</p>
             </div>
             <i class="fas fa-users text-2xl md:text-4xl text-blue-500 hidden md:block"></i>
           </div>
@@ -4211,8 +4211,9 @@ function renderFeeStatsTab() {
         </h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="bg-white rounded-lg p-4 shadow-sm">
-            <div class="text-sm text-gray-500 mb-1">총 회원</div>
-            <div class="text-2xl font-bold text-gray-800">${stats.totalMembers || 0}명</div>
+            <div class="text-sm text-gray-500 mb-1">전체 회원</div>
+            <div class="text-2xl font-bold text-gray-800">${stats.allMembers || 0}명</div>
+            <div class="text-xs text-gray-400 mt-1">면제 포함</div>
           </div>
           <div class="bg-white rounded-lg p-4 shadow-sm">
             <div class="text-sm text-gray-500 mb-1">납부 회원</div>

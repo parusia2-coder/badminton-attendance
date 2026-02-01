@@ -264,7 +264,12 @@ app.get('/stats', async (c) => {
     
     const feeAmount = feeSetting?.amount || 0
     
-    // 전체 회원 수 (면제 제외)
+    // 전체 회원 수 (면제 포함)
+    const allMembers = await env.DB.prepare(`
+      SELECT COUNT(*) as count FROM members
+    `).first()
+    
+    // 대상 회원 수 (면제 제외 - 납부율 계산용)
     const totalMembers = await env.DB.prepare(`
       SELECT COUNT(*) as count FROM members WHERE fee_paid != 2
     `).first()
@@ -322,7 +327,8 @@ app.get('/stats', async (c) => {
     
     const stats = {
       year,
-      totalMembers: totalMembers?.count || 0,
+      allMembers: allMembers?.count || 0,  // 전체 회원 (면제 포함)
+      totalMembers: totalMembers?.count || 0,  // 대상 회원 (면제 제외)
       paidMembers: paidMembers?.count || 0,
       exemptMembers: exemptMembers?.count || 0,
       unpaidMembers: unpaidMembers.results,
