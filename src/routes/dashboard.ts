@@ -13,6 +13,7 @@ app.get('/', async (c) => {
     const totalMembers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM members').first()
     const feePaidMembers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM members WHERE fee_paid = 1').first()
     const feeUnpaidMembers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM members WHERE fee_paid = 0').first()
+    const feeExemptMembers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM members WHERE fee_paid = 2').first()
     
     // 급수별 회원 분포
     const { results: gradeDistribution } = await c.env.DB.prepare(
@@ -93,6 +94,7 @@ app.get('/', async (c) => {
         total: totalMembers?.count || 0,
         feePaid: feePaidMembers?.count || 0,
         feeUnpaid: feeUnpaidMembers?.count || 0,
+        feeExempt: feeExemptMembers?.count || 0,
         gradeDistribution,
         clubDistribution
       },

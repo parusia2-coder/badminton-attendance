@@ -658,7 +658,7 @@ function renderDashboard() {
             </div>
             <i class="fas fa-users text-4xl text-blue-200"></i>
           </div>
-          <p class="text-sm text-gray-500 mt-2">회비납부: ${data.members.feePaid}명 / 미납: ${data.members.feeUnpaid}명</p>
+          <p class="text-sm text-gray-500 mt-2">납부: ${data.members.feePaid}명 / 미납: ${data.members.feeUnpaid}명 / 면제: ${data.members.feeExempt}명</p>
         </div>
         
         <div class="bg-white p-6 rounded-lg shadow-md">
