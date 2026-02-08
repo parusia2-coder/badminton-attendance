@@ -13,6 +13,7 @@ import dashboardRoutes from './routes/dashboard'
 import fileRoutes from './routes/files'
 import smsRoutes from './routes/sms'
 import feeRoutes from './routes/fees'
+import joinRequestRoutes from './routes/join-requests'
 
 type Bindings = {
   DB: D1Database
@@ -41,6 +42,7 @@ app.route('/api/dashboard', dashboardRoutes)
 app.route('/api/files', fileRoutes)
 app.route('/api/sms', smsRoutes)
 app.route('/api/fees', feeRoutes)
+app.route('/api/join-requests', joinRequestRoutes)
 
 // Health check
 app.get('/api/health', (c) => {
@@ -171,10 +173,54 @@ app.get('/', (c) => {
         <!-- Contact Section -->
         <section id="contact" class="contact-section">
             <div class="container">
-                <h2 class="section-title">가입 문의</h2>
+                <h2 class="section-title">가입 신청</h2>
                 <p class="section-description">
                     건강한 노년 생활을 위한 첫 걸음, 지금 시작하세요!
                 </p>
+                
+                <!-- 가입 신청 폼 -->
+                <div class="join-form-container">
+                    <form id="joinForm" class="join-form scroll-reveal">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="name"><i class="fas fa-user"></i> 이름 *</label>
+                                <input type="text" id="name" name="name" required placeholder="홍길동">
+                            </div>
+                            <div class="form-group">
+                                <label for="gender"><i class="fas fa-venus-mars"></i> 성별 *</label>
+                                <select id="gender" name="gender" required>
+                                    <option value="">선택해주세요</option>
+                                    <option value="남">남</option>
+                                    <option value="여">여</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="birth_year"><i class="fas fa-calendar"></i> 출생년도 *</label>
+                                <input type="number" id="birth_year" name="birth_year" required placeholder="1970" min="1940" max="2010">
+                            </div>
+                            <div class="form-group">
+                                <label for="phone"><i class="fas fa-phone"></i> 연락처 *</label>
+                                <input type="tel" id="phone" name="phone" required placeholder="010-1234-5678">
+                            </div>
+                            <div class="form-group">
+                                <label for="club"><i class="fas fa-building"></i> 희망 클럽</label>
+                                <input type="text" id="club" name="club" placeholder="예: 평촌클럽 (선택사항)">
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="message"><i class="fas fa-comment"></i> 가입 동기 및 문의사항</label>
+                            <textarea id="message" name="message" rows="4" placeholder="가입 동기나 문의사항을 자유롭게 작성해주세요 (선택사항)"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="submit-btn">
+                                <i class="fas fa-paper-plane"></i> 가입 신청하기
+                            </button>
+                        </div>
+                        <div id="joinFormMessage" class="form-message hidden"></div>
+                    </form>
+                </div>
+
+                <!-- 연락처 정보 -->
                 <div class="contact-info">
                     <div class="contact-item scroll-reveal">
                         <i class="fas fa-map-marker-alt contact-icon"></i>
