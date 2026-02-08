@@ -310,8 +310,9 @@ async function logout() {
   localStorage.removeItem('sessionName');
   app.session = null;
   app.currentPage = 'login';
-  renderApp();
-  showToast('로그아웃되었습니다', 'info');
+  
+  // 랜딩페이지로 이동
+  window.location.href = '/';
 }
 
 // 대시보드 데이터 로드
