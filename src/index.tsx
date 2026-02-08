@@ -47,8 +47,175 @@ app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-// Main page
+// Landing page
 app.get('/', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>안양시배드민턴협회 장년부 - 건강한 노년, 활기찬 황금기</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏸</text></svg>">
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/landing/styles.css" rel="stylesheet">
+    </head>
+    <body>
+        <!-- Navigation -->
+        <header class="header">
+            <nav class="navbar">
+                <div class="logo">안양시배드민턴협회 장년부</div>
+                <button class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-links">
+                    <li><a href="#home">홈</a></li>
+                    <li><a href="#about">협회소개</a></li>
+                    <li><a href="#programs">활동안내</a></li>
+                    <li><a href="#contact">가입문의</a></li>
+                    <li><a href="/admin" class="admin-link"><i class="fas fa-cog"></i> 관리자</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">건강한 노년, 활기찬 황금기</h1>
+                <p class="hero-subtitle">안양시배드민턴협회 장년부와 함께하세요</p>
+                <a href="#contact" class="cta-button">지금 가입하기</a>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="about-section">
+            <div class="container">
+                <h2 class="section-title">협회 소개</h2>
+                <p class="section-description">
+                    안양시배드민턴협회 장년부는 건강한 노년 생활과 활기찬 황금기를 보내기 위해 
+                    1995년에 설립된 비영리 체육 단체입니다. 배드민턴을 통해 건강을 지키고, 
+                    회원 간 친목을 도모하며, 지역 사회에 활력을 불어넣고 있습니다.
+                </p>
+                <div class="features">
+                    <div class="feature-card scroll-reveal">
+                        <i class="fas fa-heart feature-icon"></i>
+                        <h3>건강 증진</h3>
+                        <p>정기적인 운동으로 건강한 노년 생활을 지원합니다.</p>
+                    </div>
+                    <div class="feature-card scroll-reveal">
+                        <i class="fas fa-users feature-icon"></i>
+                        <h3>친목 도모</h3>
+                        <p>회원 간 친목을 다지고 즐거운 시간을 보냅니다.</p>
+                    </div>
+                    <div class="feature-card scroll-reveal">
+                        <i class="fas fa-trophy feature-icon"></i>
+                        <h3>실력 향상</h3>
+                        <p>체계적인 훈련으로 배드민턴 실력을 키웁니다.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Programs Section -->
+        <section id="programs" class="programs-section">
+            <div class="container">
+                <h2 class="section-title">활동 프로그램</h2>
+                <div class="program-list">
+                    <div class="program-item scroll-reveal">
+                        <i class="fas fa-calendar-check program-icon"></i>
+                        <h3>정기 훈련</h3>
+                        <p>매주 화요일, 목요일 오전 10시 - 오후 1시</p>
+                    </div>
+                    <div class="program-item scroll-reveal">
+                        <i class="fas fa-medal program-icon"></i>
+                        <h3>월례대회</h3>
+                        <p>매월 셋째 주 토요일 실력 향상 대회 개최</p>
+                    </div>
+                    <div class="program-item scroll-reveal">
+                        <i class="fas fa-coffee program-icon"></i>
+                        <h3>친목모임</h3>
+                        <p>월 1회 회원 친목 도모 및 소통의 장</p>
+                    </div>
+                    <div class="program-item scroll-reveal">
+                        <i class="fas fa-graduation-cap program-icon"></i>
+                        <h3>배드민턴 교실</h3>
+                        <p>초보자를 위한 기초 배드민턴 강습</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="container">
+                <div class="stats-grid">
+                    <div class="stat-item scroll-reveal">
+                        <i class="fas fa-users stat-icon"></i>
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label">활동 회원</div>
+                    </div>
+                    <div class="stat-item scroll-reveal">
+                        <i class="fas fa-history stat-icon"></i>
+                        <div class="stat-number">20+년</div>
+                        <div class="stat-label">역사</div>
+                    </div>
+                    <div class="stat-item scroll-reveal">
+                        <i class="fas fa-smile stat-icon"></i>
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">열정과 즐거움</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="contact-section">
+            <div class="container">
+                <h2 class="section-title">가입 문의</h2>
+                <p class="section-description">
+                    건강한 노년 생활을 위한 첫 걸음, 지금 시작하세요!
+                </p>
+                <div class="contact-info">
+                    <div class="contact-item scroll-reveal">
+                        <i class="fas fa-map-marker-alt contact-icon"></i>
+                        <div>
+                            <h4>주소</h4>
+                            <p>경기도 안양시 동안구 평촌대로 123</p>
+                        </div>
+                    </div>
+                    <div class="contact-item scroll-reveal">
+                        <i class="fas fa-phone contact-icon"></i>
+                        <div>
+                            <h4>전화</h4>
+                            <p>031-123-4567</p>
+                        </div>
+                    </div>
+                    <div class="contact-item scroll-reveal">
+                        <i class="fas fa-envelope contact-icon"></i>
+                        <div>
+                            <h4>이메일</h4>
+                            <p>anyang_seniors@example.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; 2024 안양시배드민턴협회 장년부. All rights reserved.</p>
+            </div>
+        </footer>
+
+        <script src="/static/landing/script.js"></script>
+    </body>
+    </html>
+  `)
+})
+
+// Admin page
+app.get('/admin', (c) => {
   return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
