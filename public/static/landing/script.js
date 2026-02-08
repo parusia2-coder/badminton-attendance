@@ -85,11 +85,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 birth_year: parseInt(formData.get('birth_year')),
                 phone: formData.get('phone'),
                 club: formData.get('club') || '',
+                grade: formData.get('grade'),
                 message: formData.get('message') || ''
             };
 
             // 유효성 검사
-            if (!data.name || !data.gender || !data.birth_year || !data.phone) {
+            if (!data.name || !data.gender || !data.birth_year || !data.phone || !data.grade) {
                 showFormMessage('필수 정보를 모두 입력해주세요.', 'error');
                 return;
             }

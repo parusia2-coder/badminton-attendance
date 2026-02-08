@@ -5031,6 +5031,7 @@ function renderJoinRequestsList(requests) {
               <div><i class="fas fa-birthday-cake w-5 text-gray-400"></i> ${request.birth_year}년생 (만 ${age}세)</div>
               <div><i class="fas fa-phone w-5 text-gray-400"></i> ${request.phone}</div>
               <div><i class="fas fa-building w-5 text-gray-400"></i> ${request.club || '미정'}</div>
+              <div><i class="fas fa-layer-group w-5 text-gray-400"></i> ${request.grade || '-'}조</div>
               <div><i class="fas fa-calendar w-5 text-gray-400"></i> 신청일: ${createdDate}</div>
             </div>
             ${request.message ? `

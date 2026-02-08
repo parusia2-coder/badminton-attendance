@@ -206,6 +206,17 @@ app.get('/', (c) => {
                                 <label for="club"><i class="fas fa-building"></i> 소속 클럽</label>
                                 <input type="text" id="club" name="club" placeholder="예: 평촌클럽, 안양클럽 등">
                             </div>
+                            <div class="form-group">
+                                <label for="grade"><i class="fas fa-layer-group"></i> 조 *</label>
+                                <select id="grade" name="grade" required>
+                                    <option value="">선택해주세요</option>
+                                    <option value="S">S조</option>
+                                    <option value="A">A조</option>
+                                    <option value="B">B조</option>
+                                    <option value="C">C조</option>
+                                    <option value="D">D조</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group full-width">
                             <label for="message"><i class="fas fa-comment"></i> 가입 동기 및 문의사항</label>

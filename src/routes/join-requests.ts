@@ -9,17 +9,17 @@ const app = new Hono<{ Bindings: Bindings }>()
 // 가입 신청 등록 (공개)
 app.post('/', async (c) => {
   try {
-    const { name, gender, birth_year, phone, club, message } = await c.req.json()
+    const { name, gender, birth_year, phone, club, grade, message } = await c.req.json()
 
     // 유효성 검사
-    if (!name || !gender || !birth_year || !phone) {
+    if (!name || !gender || !birth_year || !phone || !grade) {
       return c.json({ error: '필수 정보를 모두 입력해주세요' }, 400)
     }
 
     const result = await c.env.DB.prepare(`
-      INSERT INTO join_requests (name, gender, birth_year, phone, club, message, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'pending')
-    `).bind(name, gender, birth_year, phone, club || '', message || '').run()
+      INSERT INTO join_requests (name, gender, birth_year, phone, club, grade, message, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+    `).bind(name, gender, birth_year, phone, club || '', grade, message || '').run()
 
     return c.json({ 
       id: result.meta.last_row_id,
@@ -95,16 +95,17 @@ app.post('/:id/approve', async (c) => {
 
     const request = results[0] as any
 
-    // 회원 테이블에 추가
+    // 회원 테이블에 추가 (가입 신청 시 선택한 조 사용)
     await c.env.DB.prepare(`
       INSERT INTO members (name, gender, birth_year, phone, club, grade)
-      VALUES (?, ?, ?, ?, ?, 'C')
+      VALUES (?, ?, ?, ?, ?, ?)
     `).bind(
       request.name,
       request.gender,
       request.birth_year,
       request.phone,
-      request.club || '미정'
+      request.club || '미정',
+      request.grade || 'C'
     ).run()
 
     // 가입 신청 상태 업데이트
