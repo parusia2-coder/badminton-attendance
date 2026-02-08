@@ -9,7 +9,8 @@ const app = {
     attendances: [],
     inventory: [],
     boards: [],
-    posts: []
+    posts: [],
+    joinRequests: []
   }
 };
 
@@ -380,6 +381,19 @@ async function loadBoards() {
   }
 }
 
+// 가입 신청 데이터 로드
+async function loadJoinRequests() {
+  try {
+    const response = await axios.get(`${API_BASE}/join-requests`);
+    app.data.joinRequests = response.data;
+    return response.data;
+  } catch (error) {
+    console.error('가입 신청 로드 실패:', error);
+    showToast('가입 신청 데이터 로드 실패', 'error');
+    return [];
+  }
+}
+
 // 토스트 메시지
 function showToast(message, type = 'info') {
   const colors = {
@@ -509,6 +523,10 @@ function renderMainLayout() {
             <i class="fas fa-won-sign w-6"></i>
             <span class="ml-3">회비관리</span>
           </a>
+          <a href="#" data-page="join-requests" class="nav-item flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-user-plus w-6"></i>
+            <span class="ml-3">가입신청</span>
+          </a>
           <a href="#" data-page="boards" class="nav-item flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
             <i class="fas fa-comments w-6"></i>
             <span class="ml-3">게시판</span>
@@ -629,6 +647,11 @@ async function renderCurrentPage() {
       await loadBoards();
       contentDiv.innerHTML = renderBoardsPage();
       attachBoardsHandlers();
+      break;
+    case 'join-requests':
+      await loadJoinRequests();
+      contentDiv.innerHTML = renderJoinRequestsPage();
+      attachJoinRequestsHandlers();
       break;
     case 'fees':
       await loadFees();
@@ -4901,6 +4924,277 @@ function attachFeesHandlers() {
     }
   };
 }
+
+// ========================================
+// 가입 신청 관리
+// ========================================
+
+function renderJoinRequestsPage() {
+  const requests = app.data.joinRequests || [];
+  const pendingCount = requests.filter(r => r.status === 'pending').length;
+  const approvedCount = requests.filter(r => r.status === 'approved').length;
+  const rejectedCount = requests.filter(r => r.status === 'rejected').length;
+
+  return `
+    <div class="space-y-6">
+      <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">가입 신청 관리</h1>
+      </div>
+
+      <!-- 통계 카드 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-yellow-50 p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-yellow-600 font-semibold">대기 중</p>
+              <p class="text-3xl font-bold text-yellow-700">${pendingCount}</p>
+            </div>
+            <i class="fas fa-clock text-4xl text-yellow-500"></i>
+          </div>
+        </div>
+        <div class="bg-green-50 p-6 rounded-lg shadow-md border-l-4 border-green-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-green-600 font-semibold">승인됨</p>
+              <p class="text-3xl font-bold text-green-700">${approvedCount}</p>
+            </div>
+            <i class="fas fa-check-circle text-4xl text-green-500"></i>
+          </div>
+        </div>
+        <div class="bg-red-50 p-6 rounded-lg shadow-md border-l-4 border-red-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-red-600 font-semibold">거절됨</p>
+              <p class="text-3xl font-bold text-red-700">${rejectedCount}</p>
+            </div>
+            <i class="fas fa-times-circle text-4xl text-red-500"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 필터 탭 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <div class="flex gap-4 border-b">
+          <button onclick="filterJoinRequests('all')" class="filter-tab px-4 py-2 font-semibold text-gray-600 border-b-2 border-blue-500">
+            전체 (${requests.length})
+          </button>
+          <button onclick="filterJoinRequests('pending')" class="filter-tab px-4 py-2 font-semibold text-gray-600 hover:text-blue-600">
+            대기 중 (${pendingCount})
+          </button>
+          <button onclick="filterJoinRequests('approved')" class="filter-tab px-4 py-2 font-semibold text-gray-600 hover:text-blue-600">
+            승인됨 (${approvedCount})
+          </button>
+          <button onclick="filterJoinRequests('rejected')" class="filter-tab px-4 py-2 font-semibold text-gray-600 hover:text-blue-600">
+            거절됨 (${rejectedCount})
+          </button>
+        </div>
+      </div>
+
+      <!-- 가입 신청 목록 -->
+      <div id="joinRequestsList" class="space-y-4">
+        ${renderJoinRequestsList(requests)}
+      </div>
+    </div>
+  `;
+}
+
+function renderJoinRequestsList(requests) {
+  if (!requests || requests.length === 0) {
+    return `
+      <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500">가입 신청이 없습니다</p>
+      </div>
+    `;
+  }
+
+  return requests.map(request => {
+    const statusBadge = {
+      pending: '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">대기 중</span>',
+      approved: '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">승인됨</span>',
+      rejected: '<span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold">거절됨</span>'
+    };
+
+    const age = new Date().getFullYear() - request.birth_year;
+    const createdDate = new Date(request.created_at).toLocaleDateString('ko-KR');
+    
+    return `
+      <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition" data-status="${request.status}">
+        <div class="flex flex-col md:flex-row justify-between gap-4">
+          <div class="flex-1 space-y-3">
+            <div class="flex items-center gap-3">
+              <h3 class="text-xl font-bold text-gray-800">${request.name}</h3>
+              ${statusBadge[request.status]}
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+              <div><i class="fas fa-venus-mars w-5 text-gray-400"></i> ${request.gender}</div>
+              <div><i class="fas fa-birthday-cake w-5 text-gray-400"></i> ${request.birth_year}년생 (만 ${age}세)</div>
+              <div><i class="fas fa-phone w-5 text-gray-400"></i> ${request.phone}</div>
+              <div><i class="fas fa-building w-5 text-gray-400"></i> ${request.club || '미정'}</div>
+              <div><i class="fas fa-calendar w-5 text-gray-400"></i> 신청일: ${createdDate}</div>
+            </div>
+            ${request.message ? `
+              <div class="mt-3 p-3 bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-700"><strong>가입 동기:</strong> ${request.message}</p>
+              </div>
+            ` : ''}
+            ${request.admin_note ? `
+              <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                <p class="text-sm text-blue-700"><strong>관리자 메모:</strong> ${request.admin_note}</p>
+              </div>
+            ` : ''}
+          </div>
+          <div class="flex md:flex-col gap-2">
+            ${request.status === 'pending' ? `
+              <button onclick="showApproveModal(${request.id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2">
+                <i class="fas fa-check"></i> 승인
+              </button>
+              <button onclick="showRejectModal(${request.id})" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2">
+                <i class="fas fa-times"></i> 거절
+              </button>
+            ` : ''}
+            <button onclick="deleteJoinRequest(${request.id})" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2">
+              <i class="fas fa-trash"></i> 삭제
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function attachJoinRequestsHandlers() {
+  // 필터 기능은 전역 함수로 처리
+}
+
+// 가입 신청 필터링 (전역 함수)
+window.filterJoinRequests = function(status) {
+  const allRequests = app.data.joinRequests || [];
+  const filteredRequests = status === 'all' 
+    ? allRequests 
+    : allRequests.filter(r => r.status === status);
+
+  document.getElementById('joinRequestsList').innerHTML = renderJoinRequestsList(filteredRequests);
+
+  // 탭 활성화 상태 변경
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.classList.remove('border-blue-500', 'text-blue-600');
+    tab.classList.add('text-gray-600');
+  });
+  event.target.classList.add('border-blue-500', 'text-blue-600');
+  event.target.classList.remove('text-gray-600');
+};
+
+// 승인 모달 표시 (전역 함수)
+window.showApproveModal = function(requestId) {
+  const modalContainer = document.getElementById('modalContainer');
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div class="bg-green-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+          <h2 class="text-xl font-bold">가입 승인</h2>
+          <button onclick="closeModal()" class="text-white hover:text-gray-200">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-6">
+          <p class="mb-4 text-gray-700">이 가입 신청을 승인하시겠습니까?<br>승인 시 자동으로 회원 목록에 추가됩니다.</p>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">관리자 메모 (선택)</label>
+            <textarea id="approveNote" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="승인 관련 메모를 입력하세요"></textarea>
+          </div>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end gap-3">
+          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">취소</button>
+          <button onclick="approveJoinRequest(${requestId})" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">승인</button>
+        </div>
+      </div>
+    </div>
+  `;
+  modalContainer.classList.remove('hidden');
+  modalContainer.classList.add('flex');
+};
+
+// 거절 모달 표시 (전역 함수)
+window.showRejectModal = function(requestId) {
+  const modalContainer = document.getElementById('modalContainer');
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div class="bg-red-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+          <h2 class="text-xl font-bold">가입 거절</h2>
+          <button onclick="closeModal()" class="text-white hover:text-gray-200">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-6">
+          <p class="mb-4 text-gray-700">이 가입 신청을 거절하시겠습니까?</p>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">거절 사유 (선택)</label>
+            <textarea id="rejectNote" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" placeholder="거절 사유를 입력하세요"></textarea>
+          </div>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end gap-3">
+          <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">취소</button>
+          <button onclick="rejectJoinRequest(${requestId})" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">거절</button>
+        </div>
+      </div>
+    </div>
+  `;
+  modalContainer.classList.remove('hidden');
+  modalContainer.classList.add('flex');
+};
+
+// 가입 승인 처리 (전역 함수)
+window.approveJoinRequest = async function(requestId) {
+  const note = document.getElementById('approveNote').value.trim();
+  
+  try {
+    await axios.post(`${API_BASE}/join-requests/${requestId}/approve`, { admin_note: note });
+    showToast('가입이 승인되었습니다', 'success');
+    closeModal();
+    await loadJoinRequests();
+    await loadMembers(); // 회원 목록도 새로고침
+    document.getElementById('pageContent').innerHTML = renderJoinRequestsPage();
+    attachJoinRequestsHandlers();
+  } catch (error) {
+    console.error('승인 오류:', error);
+    showToast('승인에 실패했습니다', 'error');
+  }
+};
+
+// 가입 거절 처리 (전역 함수)
+window.rejectJoinRequest = async function(requestId) {
+  const note = document.getElementById('rejectNote').value.trim();
+  
+  try {
+    await axios.post(`${API_BASE}/join-requests/${requestId}/reject`, { admin_note: note });
+    showToast('가입 신청이 거절되었습니다', 'success');
+    closeModal();
+    await loadJoinRequests();
+    document.getElementById('pageContent').innerHTML = renderJoinRequestsPage();
+    attachJoinRequestsHandlers();
+  } catch (error) {
+    console.error('거절 오류:', error);
+    showToast('거절에 실패했습니다', 'error');
+  }
+};
+
+// 가입 신청 삭제 (전역 함수)
+window.deleteJoinRequest = async function(requestId) {
+  if (!confirm('이 가입 신청을 삭제하시겠습니까?')) return;
+  
+  try {
+    await axios.delete(`${API_BASE}/join-requests/${requestId}`);
+    showToast('가입 신청이 삭제되었습니다', 'success');
+    await loadJoinRequests();
+    document.getElementById('pageContent').innerHTML = renderJoinRequestsPage();
+    attachJoinRequestsHandlers();
+  } catch (error) {
+    console.error('삭제 오류:', error);
+    showToast('삭제에 실패했습니다', 'error');
+  }
+};
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {

@@ -203,8 +203,8 @@ app.get('/', (c) => {
                                 <input type="tel" id="phone" name="phone" required placeholder="010-1234-5678">
                             </div>
                             <div class="form-group">
-                                <label for="club"><i class="fas fa-building"></i> 희망 클럽</label>
-                                <input type="text" id="club" name="club" placeholder="예: 평촌클럽 (선택사항)">
+                                <label for="club"><i class="fas fa-building"></i> 소속 클럽</label>
+                                <input type="text" id="club" name="club" placeholder="예: 평촌클럽, 안양클럽 등">
                             </div>
                         </div>
                         <div class="form-group full-width">
