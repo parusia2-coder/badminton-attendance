@@ -206,8 +206,8 @@ app.get('/', (c) => {
                         </div>
                     </div>
                     
-                    <!-- 감사 및 고문진 -->
-                    <div class="org-level org-advisory scroll-reveal">
+                    <!-- 감사 -->
+                    <div class="org-level org-auditor scroll-reveal">
                         <div class="org-card auditor">
                             <div class="org-icon"><i class="fas fa-balance-scale"></i></div>
                             <h3>감사</h3>
@@ -215,6 +215,10 @@ app.get('/', (c) => {
                                 <p class="org-name">• 미정</p>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- 고문 -->
+                    <div class="org-level org-advisors scroll-reveal">
                         <div class="org-card advisors">
                             <div class="org-icon"><i class="fas fa-user-tie"></i></div>
                             <h3>고문</h3>
