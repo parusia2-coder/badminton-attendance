@@ -393,3 +393,155 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+    // 캘린더 초기화
+    function initCalendar() {
+        let currentDate = new Date();
+        let schedules = [];
+
+        // API에서 일정 데이터 로드
+        async function loadSchedules() {
+            try {
+                // 향후 1년치 일정 로드
+                const startDate = new Date();
+                startDate.setMonth(startDate.getMonth() - 1);
+                const endDate = new Date();
+                endDate.setFullYear(endDate.getFullYear() + 1);
+
+                const response = await fetch('/api/schedules');
+                const data = await response.json();
+                schedules = data.schedules || [];
+                renderCalendar();
+            } catch (error) {
+                console.error('일정 로드 실패:', error);
+                schedules = [];
+                renderCalendar();
+            }
+        }
+
+        // 캘린더 렌더링
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // 타이틀 업데이트
+            document.getElementById('calendarTitle').textContent = `${year}년 ${month + 1}월`;
+            
+            // 해당 월의 첫날과 마지막날
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            // 이전 달의 마지막 날
+            const prevLastDay = new Date(year, month, 0);
+            
+            // 시작 요일 (0: 일요일, 6: 토요일)
+            const firstDayOfWeek = firstDay.getDay();
+            
+            // 총 날짜 수
+            const daysInMonth = lastDay.getDate();
+            
+            // 캘린더 days 컨테이너
+            const calendarDays = document.getElementById('calendarDays');
+            calendarDays.innerHTML = '';
+            
+            // 오늘 날짜
+            const today = new Date();
+            const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+            const todayDate = today.getDate();
+            
+            // 이전 달 날짜들
+            for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+                const day = prevLastDay.getDate() - i;
+                const dayDiv = createDayElement(day, true, false, []);
+                calendarDays.appendChild(dayDiv);
+            }
+            
+            // 현재 달 날짜들
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const daySchedules = schedules.filter(s => s.schedule_date === dateString);
+                const isToday = isCurrentMonth && day === todayDate;
+                
+                const dayDiv = createDayElement(day, false, isToday, daySchedules);
+                calendarDays.appendChild(dayDiv);
+            }
+            
+            // 다음 달 날짜들 (6주 그리드 채우기)
+            const totalCells = calendarDays.children.length;
+            const remainingCells = 42 - totalCells; // 6주 * 7일
+            
+            for (let day = 1; day <= remainingCells; day++) {
+                const dayDiv = createDayElement(day, true, false, []);
+                calendarDays.appendChild(dayDiv);
+            }
+        }
+        
+        // 날짜 요소 생성
+        function createDayElement(day, isOtherMonth, isToday, daySchedules) {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day';
+            
+            if (isOtherMonth) {
+                dayDiv.classList.add('other-month');
+            }
+            if (isToday) {
+                dayDiv.classList.add('today');
+            }
+            if (daySchedules.length > 0) {
+                dayDiv.classList.add('has-event');
+            }
+            
+            // 날짜 번호
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            dayDiv.appendChild(dayNumber);
+            
+            // 일정 표시
+            if (daySchedules.length > 0) {
+                const eventsDiv = document.createElement('div');
+                eventsDiv.className = 'day-events';
+                
+                daySchedules.forEach(schedule => {
+                    const eventDiv = document.createElement('div');
+                    eventDiv.className = 'day-event';
+                    
+                    // 일정 타입 판별 (정모/특모)
+                    const title = schedule.title || '';
+                    if (title.includes('특모') || title.includes('특별')) {
+                        eventDiv.classList.add('special');
+                    } else {
+                        eventDiv.classList.add('regular');
+                    }
+                    
+                    eventDiv.textContent = title.length > 8 ? title.substring(0, 8) + '...' : title;
+                    eventDiv.title = title; // 전체 제목 툴팁
+                    eventsDiv.appendChild(eventDiv);
+                });
+                
+                dayDiv.appendChild(eventsDiv);
+            }
+            
+            return dayDiv;
+        }
+        
+        // 이전 달 버튼
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+        
+        // 다음 달 버튼
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+        
+        // 초기 로드
+        loadSchedules();
+    }
+
+    // 캘린더 초기화 호출
+    if (document.getElementById('calendarDays')) {
+        initCalendar();
+    }

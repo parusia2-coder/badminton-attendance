@@ -356,92 +356,57 @@ app.get('/', (c) => {
                     매월 정기모임과 특별모임을 통해 회원 간 친목과 실력 향상을 도모합니다
                 </p>
                 
-                <div class="schedule-tabs">
-                    <button class="schedule-tab active" onclick="showScheduleType('monthly')">
-                        <i class="fas fa-calendar-alt"></i> 월별 일정
-                    </button>
-                </div>
-                
-                <div id="scheduleContent" class="schedule-content">
-                    <div class="schedule-notice scroll-reveal">
-                        <i class="fas fa-info-circle"></i>
-                        <p>
-                            <strong>정기모임(정모)</strong>: 매월 정기적으로 개최되는 친선 경기<br>
-                            <strong>특별모임(특모)</strong>: 특별한 날을 기념하여 열리는 대회<br>
-                            구체적인 일정은 관리자 로그인 후 <strong>일정관리</strong> 메뉴에서 확인하실 수 있습니다.
-                        </p>
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button class="calendar-nav-btn" id="prevMonth">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <h3 class="calendar-title" id="calendarTitle">2026년 2월</h3>
+                        <button class="calendar-nav-btn" id="nextMonth">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
                     </div>
                     
-                    <div class="schedule-grid">
-                        <div class="schedule-card scroll-reveal">
-                            <div class="schedule-month">1월</div>
-                            <div class="schedule-items">
-                                <div class="schedule-item">
-                                    <span class="schedule-badge regular">정모</span>
-                                    <span class="schedule-text">1월 정기모임</span>
-                                </div>
-                            </div>
+                    <div class="calendar-weekdays">
+                        <div class="calendar-weekday">일</div>
+                        <div class="calendar-weekday">월</div>
+                        <div class="calendar-weekday">화</div>
+                        <div class="calendar-weekday">수</div>
+                        <div class="calendar-weekday">목</div>
+                        <div class="calendar-weekday">금</div>
+                        <div class="calendar-weekday">토</div>
+                    </div>
+                    
+                    <div class="calendar-days" id="calendarDays">
+                        <!-- JavaScript로 동적 생성 -->
+                    </div>
+                    
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot regular"></span>
+                            <span>정기모임</span>
                         </div>
-                        
-                        <div class="schedule-card scroll-reveal">
-                            <div class="schedule-month">2월</div>
-                            <div class="schedule-items">
-                                <div class="schedule-item">
-                                    <span class="schedule-badge regular">정모</span>
-                                    <span class="schedule-text">2월 정기모임</span>
-                                </div>
-                                <div class="schedule-item">
-                                    <span class="schedule-badge special">특모</span>
-                                    <span class="schedule-text">설날 특별대회</span>
-                                </div>
-                            </div>
+                        <div class="legend-item">
+                            <span class="legend-dot special"></span>
+                            <span>특별모임</span>
                         </div>
-                        
-                        <div class="schedule-card scroll-reveal">
-                            <div class="schedule-month">3월</div>
-                            <div class="schedule-items">
-                                <div class="schedule-item">
-                                    <span class="schedule-badge regular">정모</span>
-                                    <span class="schedule-text">3월 정기모임</span>
-                                </div>
-                            </div>
+                        <div class="legend-item">
+                            <span class="legend-dot today"></span>
+                            <span>오늘</span>
                         </div>
-                        
-                        <div class="schedule-card scroll-reveal">
-                            <div class="schedule-month">4월</div>
-                            <div class="schedule-items">
-                                <div class="schedule-item">
-                                    <span class="schedule-badge regular">정모</span>
-                                    <span class="schedule-text">4월 정기모임</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="schedule-card scroll-reveal">
-                            <div class="schedule-month">5월</div>
-                            <div class="schedule-items">
-                                <div class="schedule-item">
-                                    <span class="schedule-badge regular">정모</span>
-                                    <span class="schedule-text">5월 정기모임</span>
-                                </div>
-                                <div class="schedule-item">
-                                    <span class="schedule-badge special">특모</span>
-                                    <span class="schedule-text">어버이날 특별대회</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="schedule-card scroll-reveal">
-                            <div class="schedule-month">6월</div>
-                            <div class="schedule-items">
-                                <div class="schedule-item">
-                                    <span class="schedule-badge regular">정모</span>
-                                    <span class="schedule-text">6월 정기모임</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="schedule-card scroll-reveal">
+                    </div>
+                </div>
+                
+                <div class="schedule-notice scroll-reveal" style="margin-top: 2rem;">
+                    <i class="fas fa-info-circle"></i>
+                    <p>
+                        <strong>정기모임(정모)</strong>: 매월 정기적으로 개최되는 친선 경기<br>
+                        <strong>특별모임(특모)</strong>: 특별한 날을 기념하여 열리는 대회<br>
+                        상세 일정 및 참가 신청은 관리자에게 문의하세요.
+                    </p>
+                </div>
+            </div>
+        </section>
                             <div class="schedule-month">7월</div>
                             <div class="schedule-items">
                                 <div class="schedule-item">
