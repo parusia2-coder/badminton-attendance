@@ -93,6 +93,21 @@ a {
   background: #2980b9;
 }
 
+.nav-links .band-link {
+  background: #00c73c;
+  color: #fff;
+  padding: 0.5rem 1.5rem;
+  border-radius: 5px;
+  transition: background 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-links .band-link:hover {
+  background: #00a832;
+}
+
 /* Hero Section */
 .hero {
   min-height: 100vh;
@@ -616,5 +631,402 @@ a {
 
   .stat-number {
     font-size: 2.5rem;
+  }
+}
+
+/* About Section - Enhanced */
+.about-content {
+  margin-top: 3rem;
+}
+
+.about-intro {
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto 4rem;
+}
+
+.intro-text {
+  font-size: 1.15rem;
+  line-height: 1.9;
+  color: #444;
+}
+
+.about-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.detail-card {
+  background: #fff;
+  padding: 2.5rem 2rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.detail-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.detail-icon {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 2rem;
+  color: #fff;
+}
+
+.detail-card h3 {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.detail-card p {
+  color: #666;
+  line-height: 1.8;
+  text-align: center;
+}
+
+/* Organization Chart Section */
+.organization-section {
+  padding: 6rem 2rem;
+  background: #fff;
+}
+
+.org-chart {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 3rem 0;
+}
+
+.org-level {
+  margin-bottom: 3rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.org-card {
+  background: #fff;
+  padding: 2rem 3rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  min-width: 200px;
+  transition: all 0.3s ease;
+}
+
+.org-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.org-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: #fff;
+}
+
+.org-card.president .org-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  width: 100px;
+  height: 100px;
+  font-size: 3rem;
+}
+
+.org-card.auditor .org-icon,
+.org-card.advisors .org-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.org-card.vice-presidents .org-icon {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.org-card.consultants .org-icon {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.org-card.directors .org-icon {
+  background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+}
+
+.org-card h3 {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.org-count {
+  font-size: 1.1rem;
+  color: #667eea;
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.org-role {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.org-section-title {
+  width: 100%;
+  text-align: center;
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.org-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: #667eea;
+}
+
+.org-exec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.org-exec-card {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.org-exec-card:hover {
+  border-color: #667eea;
+  background: #fff;
+  transform: translateY(-3px);
+}
+
+.exec-icon {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 1rem;
+  background: #667eea;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.org-exec-card h4 {
+  font-size: 1rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.exec-count {
+  font-size: 0.9rem;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.org-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin-top: 4rem;
+}
+
+.stat-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.stat-box i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+.stat-box h4 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.95;
+}
+
+.stat-box .stat-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+/* Schedule Section */
+.schedule-section {
+  padding: 6rem 2rem;
+  background: #f8f9fa;
+}
+
+.schedule-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.schedule-tab {
+  padding: 1rem 2rem;
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.schedule-tab:hover,
+.schedule-tab.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-color: #667eea;
+}
+
+.schedule-notice {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 15px;
+  margin-bottom: 3rem;
+  border-left: 5px solid #667eea;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.schedule-notice i {
+  font-size: 1.5rem;
+  color: #667eea;
+  margin-right: 1rem;
+}
+
+.schedule-notice p {
+  color: #555;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.schedule-card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.schedule-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.schedule-month {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.schedule-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.schedule-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+}
+
+.schedule-badge.regular {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.schedule-badge.special {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.schedule-text {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+/* Responsive for Organization and Schedule */
+@media (max-width: 768px) {
+  .org-exec-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .schedule-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .org-stats {
+    grid-template-columns: 1fr;
   }
 }
