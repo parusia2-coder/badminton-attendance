@@ -14,6 +14,7 @@ import fileRoutes from './routes/files'
 import smsRoutes from './routes/sms'
 import feeRoutes from './routes/fees'
 import joinRequestRoutes from './routes/join-requests'
+import heroImageRoutes from './routes/hero-images'
 
 type Bindings = {
   DB: D1Database
@@ -43,6 +44,7 @@ app.route('/api/files', fileRoutes)
 app.route('/api/sms', smsRoutes)
 app.route('/api/fees', feeRoutes)
 app.route('/api/join-requests', joinRequestRoutes)
+app.route('/api/hero-images', heroImageRoutes)
 
 // Health check
 app.get('/api/health', (c) => {
@@ -82,12 +84,22 @@ app.get('/', (c) => {
             </nav>
         </header>
 
-        <!-- Hero Section -->
+        <!-- Hero Section with Slider -->
         <section id="home" class="hero">
+            <div class="hero-slider">
+                <div class="hero-slide active">
+                    <div class="hero-background"></div>
+                </div>
+            </div>
             <div class="hero-content">
                 <h1 class="hero-title">건강한 노년, 활기찬 황금기</h1>
                 <p class="hero-subtitle">안양시배드민턴협회 장년부와 함께하세요</p>
                 <a href="#contact" class="cta-button">지금 가입하기</a>
+            </div>
+            <div class="hero-controls">
+                <button class="hero-prev" aria-label="이전 슬라이드"><i class="fas fa-chevron-left"></i></button>
+                <div class="hero-indicators"></div>
+                <button class="hero-next" aria-label="다음 슬라이드"><i class="fas fa-chevron-right"></i></button>
             </div>
         </section>
 

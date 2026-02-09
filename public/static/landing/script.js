@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Hero Slider 초기화
+    initHeroSlider();
+
     // 스크롤 애니메이션 (Intersection Observer)
     const observerOptions = {
         root: null,
@@ -158,5 +161,154 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 메시지 위치로 스크롤
         joinFormMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Hero Slider Functions
+    function initHeroSlider() {
+        let currentSlide = 0;
+        let heroImages = [];
+        let autoPlayInterval;
+        const slider = document.querySelector('.hero-slider');
+        const heroTitle = document.querySelector('.hero-title');
+        const heroSubtitle = document.querySelector('.hero-subtitle');
+        const prevBtn = document.querySelector('.hero-prev');
+        const nextBtn = document.querySelector('.hero-next');
+        const indicatorsContainer = document.querySelector('.hero-indicators');
+
+        // API에서 히어로 이미지 불러오기
+        async function loadHeroImages() {
+            try {
+                const response = await fetch('/api/hero-images?status=active');
+                const data = await response.json();
+                heroImages = data.images || [];
+
+                if (heroImages.length === 0) {
+                    // 기본 이미지
+                    heroImages = [
+                        {
+                            id: 1,
+                            image_url: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80',
+                            title: '건강한 노년, 활기찬 황금기',
+                            subtitle: '안양시배드민턴협회 장년부와 함께하세요'
+                        }
+                    ];
+                }
+
+                renderSlider();
+                startAutoPlay();
+            } catch (error) {
+                console.error('히어로 이미지 로드 실패:', error);
+                // 폴백 이미지
+                heroImages = [
+                    {
+                        id: 1,
+                        image_url: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80',
+                        title: '건강한 노년, 활기찬 황금기',
+                        subtitle: '안양시배드민턴협회 장년부와 함께하세요'
+                    }
+                ];
+                renderSlider();
+            }
+        }
+
+        function renderSlider() {
+            // 슬라이드 생성
+            slider.innerHTML = '';
+            heroImages.forEach((img, index) => {
+                const slide = document.createElement('div');
+                slide.className = `hero-slide ${index === 0 ? 'active' : ''}`;
+                slide.innerHTML = `
+                    <div class="hero-background" style="background-image: url('${img.image_url}')"></div>
+                `;
+                slider.appendChild(slide);
+            });
+
+            // 인디케이터 생성
+            if (indicatorsContainer) {
+                indicatorsContainer.innerHTML = '';
+                heroImages.forEach((_, index) => {
+                    const indicator = document.createElement('div');
+                    indicator.className = `hero-indicator ${index === 0 ? 'active' : ''}`;
+                    indicator.addEventListener('click', () => goToSlide(index));
+                    indicatorsContainer.appendChild(indicator);
+                });
+            }
+
+            // 첫 번째 이미지 텍스트 설정
+            updateContent(0);
+
+            // 단일 이미지일 경우 컨트롤 숨김
+            if (heroImages.length <= 1) {
+                if (prevBtn) prevBtn.style.display = 'none';
+                if (nextBtn) nextBtn.style.display = 'none';
+                if (indicatorsContainer) indicatorsContainer.style.display = 'none';
+            }
+        }
+
+        function updateContent(index) {
+            const img = heroImages[index];
+            if (heroTitle) {
+                heroTitle.textContent = img.title || '안양시배드민턴협회 장년부';
+                heroTitle.style.animation = 'none';
+                setTimeout(() => heroTitle.style.animation = 'fadeInUp 0.8s ease', 10);
+            }
+            if (heroSubtitle) {
+                heroSubtitle.textContent = img.subtitle || '건강한 노년, 활기찬 황금기';
+                heroSubtitle.style.animation = 'none';
+                setTimeout(() => heroSubtitle.style.animation = 'fadeInUp 0.8s ease 0.2s both', 10);
+            }
+        }
+
+        function goToSlide(index) {
+            const slides = document.querySelectorAll('.hero-slide');
+            const indicators = document.querySelectorAll('.hero-indicator');
+
+            slides[currentSlide].classList.remove('active');
+            if (indicators[currentSlide]) indicators[currentSlide].classList.remove('active');
+
+            currentSlide = index;
+
+            slides[currentSlide].classList.add('active');
+            if (indicators[currentSlide]) indicators[currentSlide].classList.add('active');
+
+            updateContent(currentSlide);
+        }
+
+        function nextSlide() {
+            goToSlide((currentSlide + 1) % heroImages.length);
+        }
+
+        function prevSlide() {
+            goToSlide((currentSlide - 1 + heroImages.length) % heroImages.length);
+        }
+
+        function startAutoPlay() {
+            if (heroImages.length <= 1) return;
+            autoPlayInterval = setInterval(nextSlide, 5000); // 5초마다 자동 전환
+        }
+
+        function stopAutoPlay() {
+            clearInterval(autoPlayInterval);
+        }
+
+        // 이벤트 리스너
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                stopAutoPlay();
+                prevSlide();
+                startAutoPlay();
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                stopAutoPlay();
+                nextSlide();
+                startAutoPlay();
+            });
+        }
+
+        // 초기 로드
+        loadHeroImages();
     }
 });

@@ -10,7 +10,8 @@ const app = {
     inventory: [],
     boards: [],
     posts: [],
-    joinRequests: []
+    joinRequests: [],
+    heroImages: []
   }
 };
 
@@ -531,6 +532,10 @@ function renderMainLayout() {
             <i class="fas fa-comments w-6"></i>
             <span class="ml-3">게시판</span>
           </a>
+          <a href="#" data-page="hero-images" class="nav-item flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-images w-6"></i>
+            <span class="ml-3">메인이미지</span>
+          </a>
         </nav>
         
         <div class="absolute bottom-0 w-64 p-6">
@@ -652,6 +657,11 @@ async function renderCurrentPage() {
       await loadJoinRequests();
       contentDiv.innerHTML = renderJoinRequestsPage();
       attachJoinRequestsHandlers();
+      break;
+    case 'hero-images':
+      await loadHeroImages();
+      contentDiv.innerHTML = renderHeroImagesPage();
+      attachHeroImagesHandlers();
       break;
     case 'fees':
       await loadFees();
@@ -5194,6 +5204,315 @@ window.deleteJoinRequest = async function(requestId) {
   } catch (error) {
     console.error('삭제 오류:', error);
     showToast('삭제에 실패했습니다', 'error');
+  }
+};
+
+// ========================================
+// 히어로 이미지 관리
+// ========================================
+
+// 히어로 이미지 데이터 로드
+async function loadHeroImages() {
+  try {
+    const response = await axios.get(`${API_BASE}/hero-images?status=all`);
+    app.data.heroImages = response.data.images || [];
+    return app.data.heroImages;
+  } catch (error) {
+    console.error('히어로 이미지 로드 실패:', error);
+    showToast('히어로 이미지 로드 실패', 'error');
+    return [];
+  }
+}
+
+// 히어로 이미지 페이지 렌더링
+function renderHeroImagesPage() {
+  const images = app.data.heroImages || [];
+  
+  return `
+    <div class="space-y-6">
+      <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">메인 이미지 관리</h1>
+        <button onclick="showAddHeroImageModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+          <i class="fas fa-plus"></i>
+          이미지 추가
+        </button>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="mb-4 text-sm text-gray-600">
+          <i class="fas fa-info-circle"></i>
+          메인 페이지 히어로 섹션에 표시될 이미지를 관리합니다. 이미지는 5초마다 자동으로 전환됩니다.
+        </div>
+
+        ${images.length === 0 ? `
+          <div class="text-center py-20 text-gray-500">
+            <i class="fas fa-images text-6xl mb-4"></i>
+            <p class="text-lg">등록된 이미지가 없습니다</p>
+            <p class="text-sm mt-2">새 이미지를 추가해주세요</p>
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${images.map(img => `
+              <div class="hero-image-card border rounded-lg overflow-hidden ${img.is_active ? 'border-green-500' : 'border-gray-300'}" data-id="${img.id}">
+                <div class="relative aspect-video bg-gray-100">
+                  <img src="${img.image_url}" alt="${img.title || ''}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/800x450?text=이미지+로드+실패'">
+                  <div class="absolute top-2 right-2 flex gap-2">
+                    <span class="px-2 py-1 text-xs rounded ${img.is_active ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}">
+                      ${img.is_active ? '활성' : '비활성'}
+                    </span>
+                    <span class="px-2 py-1 text-xs rounded bg-blue-500 text-white">
+                      #${img.display_order}
+                    </span>
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h3 class="font-bold text-lg mb-1">${img.title || '제목 없음'}</h3>
+                  <p class="text-sm text-gray-600 mb-4">${img.subtitle || ''}</p>
+                  <div class="flex gap-2">
+                    <button onclick="editHeroImage(${img.id})" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 transition text-sm">
+                      <i class="fas fa-edit"></i> 수정
+                    </button>
+                    <button onclick="toggleHeroImageStatus(${img.id}, ${img.is_active})" class="flex-1 bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600 transition text-sm">
+                      <i class="fas fa-${img.is_active ? 'eye-slash' : 'eye'}"></i> ${img.is_active ? '비활성화' : '활성화'}
+                    </button>
+                    <button onclick="deleteHeroImage(${img.id})" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 transition text-sm">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                  <div class="flex gap-2 mt-2">
+                    <button onclick="moveHeroImage(${img.id}, 'up')" class="flex-1 bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 transition text-sm" ${img.display_order === 1 ? 'disabled' : ''}>
+                      <i class="fas fa-arrow-up"></i> 위로
+                    </button>
+                    <button onclick="moveHeroImage(${img.id}, 'down')" class="flex-1 bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 transition text-sm">
+                      <i class="fas fa-arrow-down"></i> 아래로
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+// 히어로 이미지 핸들러 연결
+function attachHeroImagesHandlers() {
+  // 핸들러는 전역 함수로 정의됨
+}
+
+// 히어로 이미지 추가 모달
+window.showAddHeroImageModal = function() {
+  const modalContainer = document.getElementById('modalContainer');
+  if (!modalContainer) return;
+
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+          <h2 class="text-2xl font-bold">히어로 이미지 추가</h2>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+
+        <form id="heroImageForm" class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">이미지 URL *</label>
+            <input type="url" name="image_url" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/image.jpg">
+            <p class="text-xs text-gray-500 mt-1">Unsplash, Pexels 등의 무료 이미지 URL을 입력하세요</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">제목</label>
+            <input type="text" name="title" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="예: 건강한 노년, 활기찬 황금기">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">부제목</label>
+            <input type="text" name="subtitle" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="예: 안양시배드민턴협회 장년부와 함께하세요">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">표시 순서</label>
+            <input type="number" name="display_order" min="1" value="1" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+              추가
+            </button>
+            <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-medium">
+              취소
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('heroImageForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      image_url: formData.get('image_url'),
+      title: formData.get('title'),
+      subtitle: formData.get('subtitle'),
+      display_order: parseInt(formData.get('display_order')) || 1
+    };
+
+    try {
+      await axios.post(`${API_BASE}/hero-images`, data);
+      showToast('히어로 이미지가 추가되었습니다', 'success');
+      closeModal();
+      await loadHeroImages();
+      document.getElementById('pageContent').innerHTML = renderHeroImagesPage();
+    } catch (error) {
+      console.error('이미지 추가 오류:', error);
+      showToast('이미지 추가 실패', 'error');
+    }
+  });
+};
+
+// 히어로 이미지 수정
+window.editHeroImage = function(id) {
+  const image = app.data.heroImages.find(img => img.id === id);
+  if (!image) return;
+
+  const modalContainer = document.getElementById('modalContainer');
+  if (!modalContainer) return;
+
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+          <h2 class="text-2xl font-bold">히어로 이미지 수정</h2>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+
+        <form id="editHeroImageForm" class="p-6 space-y-4">
+          <div class="mb-4">
+            <img src="${image.image_url}" alt="${image.title}" class="w-full aspect-video object-cover rounded-lg">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">이미지 URL *</label>
+            <input type="url" name="image_url" value="${image.image_url}" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">제목</label>
+            <input type="text" name="title" value="${image.title || ''}" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">부제목</label>
+            <input type="text" name="subtitle" value="${image.subtitle || ''}" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">표시 순서</label>
+            <input type="number" name="display_order" value="${image.display_order}" min="1" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+              수정
+            </button>
+            <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-medium">
+              취소
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('editHeroImageForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      image_url: formData.get('image_url'),
+      title: formData.get('title'),
+      subtitle: formData.get('subtitle'),
+      display_order: parseInt(formData.get('display_order'))
+    };
+
+    try {
+      await axios.put(`${API_BASE}/hero-images/${id}`, data);
+      showToast('히어로 이미지가 수정되었습니다', 'success');
+      closeModal();
+      await loadHeroImages();
+      document.getElementById('pageContent').innerHTML = renderHeroImagesPage();
+    } catch (error) {
+      console.error('이미지 수정 오류:', error);
+      showToast('이미지 수정 실패', 'error');
+    }
+  });
+};
+
+// 히어로 이미지 활성화/비활성화 토글
+window.toggleHeroImageStatus = async function(id, currentStatus) {
+  try {
+    await axios.put(`${API_BASE}/hero-images/${id}`, {
+      is_active: currentStatus ? 0 : 1
+    });
+    showToast(`이미지가 ${currentStatus ? '비활성화' : '활성화'}되었습니다`, 'success');
+    await loadHeroImages();
+    document.getElementById('pageContent').innerHTML = renderHeroImagesPage();
+  } catch (error) {
+    console.error('상태 변경 오류:', error);
+    showToast('상태 변경 실패', 'error');
+  }
+};
+
+// 히어로 이미지 삭제
+window.deleteHeroImage = async function(id) {
+  if (!confirm('이 이미지를 삭제하시겠습니까?')) return;
+
+  try {
+    await axios.delete(`${API_BASE}/hero-images/${id}`);
+    showToast('히어로 이미지가 삭제되었습니다', 'success');
+    await loadHeroImages();
+    document.getElementById('pageContent').innerHTML = renderHeroImagesPage();
+  } catch (error) {
+    console.error('이미지 삭제 오류:', error);
+    showToast('이미지 삭제 실패', 'error');
+  }
+};
+
+// 히어로 이미지 순서 이동
+window.moveHeroImage = async function(id, direction) {
+  const images = [...app.data.heroImages].sort((a, b) => a.display_order - b.display_order);
+  const currentIndex = images.findIndex(img => img.id === id);
+  
+  if (currentIndex === -1) return;
+  if (direction === 'up' && currentIndex === 0) return;
+  if (direction === 'down' && currentIndex === images.length - 1) return;
+
+  const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  
+  // 순서 교환
+  const temp = images[currentIndex].display_order;
+  images[currentIndex].display_order = images[targetIndex].display_order;
+  images[targetIndex].display_order = temp;
+
+  try {
+    await axios.put(`${API_BASE}/hero-images/batch/reorder`, {
+      orders: [
+        { id: images[currentIndex].id, display_order: images[currentIndex].display_order },
+        { id: images[targetIndex].id, display_order: images[targetIndex].display_order }
+      ]
+    });
+    showToast('순서가 변경되었습니다', 'success');
+    await loadHeroImages();
+    document.getElementById('pageContent').innerHTML = renderHeroImagesPage();
+  } catch (error) {
+    console.error('순서 변경 오류:', error);
+    showToast('순서 변경 실패', 'error');
   }
 };
 
