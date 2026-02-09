@@ -531,7 +531,7 @@ app.get('/', (c) => {
                         <i class="fas fa-map-marker-alt contact-icon"></i>
                         <div>
                             <h4>주소</h4>
-                            <p>비산노인종합복지관 5층 배드민턴장</p>
+                            <p>비산노인종합복지관 5층<br>배드민턴장</p>
                         </div>
                     </div>
                     <div class="contact-item scroll-reveal">
