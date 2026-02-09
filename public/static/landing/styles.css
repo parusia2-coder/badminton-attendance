@@ -1281,3 +1281,19 @@ a {
     max-width: 100%;
   }
 }
+
+/* Loading Spinner */
+.loading-spinner {
+  font-size: 0.9em;
+  color: #999;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

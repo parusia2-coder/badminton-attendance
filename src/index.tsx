@@ -15,6 +15,7 @@ import smsRoutes from './routes/sms'
 import feeRoutes from './routes/fees'
 import joinRequestRoutes from './routes/join-requests'
 import heroImageRoutes from './routes/hero-images'
+import statsRoutes from './routes/stats'
 
 type Bindings = {
   DB: D1Database
@@ -45,6 +46,7 @@ app.route('/api/sms', smsRoutes)
 app.route('/api/fees', feeRoutes)
 app.route('/api/join-requests', joinRequestRoutes)
 app.route('/api/hero-images', heroImageRoutes)
+app.route('/api/stats', statsRoutes)
 
 // Health check
 app.get('/api/health', (c) => {
@@ -331,12 +333,16 @@ app.get('/', (c) => {
                     <div class="stat-box scroll-reveal">
                         <i class="fas fa-users"></i>
                         <h4>전체 회원</h4>
-                        <p class="stat-number">500+명</p>
+                        <p class="stat-number" id="totalMembersCount">
+                            <span class="loading-spinner">로딩중...</span>
+                        </p>
                     </div>
                     <div class="stat-box scroll-reveal">
                         <i class="fas fa-building"></i>
                         <h4>소속 클럽</h4>
-                        <p class="stat-number">20+개</p>
+                        <p class="stat-number" id="totalClubsCount">
+                            <span class="loading-spinner">로딩중...</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -546,12 +552,16 @@ app.get('/', (c) => {
                 <div class="stats-grid">
                     <div class="stat-item scroll-reveal">
                         <i class="fas fa-users stat-icon"></i>
-                        <div class="stat-number">500+</div>
+                        <div class="stat-number" id="statsMembers">
+                            <span class="loading-spinner">...</span>
+                        </div>
                         <div class="stat-label">활동 회원</div>
                     </div>
                     <div class="stat-item scroll-reveal">
                         <i class="fas fa-history stat-icon"></i>
-                        <div class="stat-number">20+년</div>
+                        <div class="stat-number" id="statsYears">
+                            <span class="loading-spinner">...</span>
+                        </div>
                         <div class="stat-label">역사</div>
                     </div>
                     <div class="stat-item scroll-reveal">

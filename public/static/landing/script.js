@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // 실시간 통계 로드
+    loadLiveStats();
+
     // Hero Slider 초기화
     initHeroSlider();
 
@@ -310,5 +313,83 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 초기 로드
         loadHeroImages();
+    }
+
+    // 실시간 통계 로드
+    async function loadLiveStats() {
+        try {
+            const response = await fetch('/api/stats/public');
+            const data = await response.json();
+
+            // 조직도 통계 업데이트
+            const totalMembersElement = document.getElementById('totalMembersCount');
+            const totalClubsElement = document.getElementById('totalClubsCount');
+            
+            if (totalMembersElement) {
+                totalMembersElement.textContent = `${data.totalMembers}명`;
+            }
+            
+            if (totalClubsElement) {
+                totalClubsElement.textContent = `${data.totalClubs}개`;
+            }
+
+            // Stats Section 업데이트
+            const statsMembersElement = document.getElementById('statsMembers');
+            const statsYearsElement = document.getElementById('statsYears');
+            
+            if (statsMembersElement) {
+                statsMembersElement.textContent = `${data.totalMembers}+`;
+            }
+            
+            if (statsYearsElement) {
+                statsYearsElement.textContent = `${data.yearsActive}+년`;
+            }
+
+            // 숫자 애니메이션 효과
+            animateNumbers();
+        } catch (error) {
+            console.error('통계 로드 실패:', error);
+            // 폴백 값 설정
+            const totalMembersElement = document.getElementById('totalMembersCount');
+            const totalClubsElement = document.getElementById('totalClubsCount');
+            const statsMembersElement = document.getElementById('statsMembers');
+            const statsYearsElement = document.getElementById('statsYears');
+            
+            if (totalMembersElement) totalMembersElement.textContent = '500+명';
+            if (totalClubsElement) totalClubsElement.textContent = '20+개';
+            if (statsMembersElement) statsMembersElement.textContent = '500+';
+            if (statsYearsElement) statsYearsElement.textContent = '20+년';
+        }
+    }
+
+    // 숫자 카운트업 애니메이션
+    function animateNumbers() {
+        const statNumbers = document.querySelectorAll('.stat-number');
+        
+        statNumbers.forEach(stat => {
+            const text = stat.textContent;
+            const match = text.match(/(\d+)/);
+            
+            if (match) {
+                const finalNumber = parseInt(match[1]);
+                const duration = 2000; // 2초
+                const steps = 60;
+                const increment = finalNumber / steps;
+                let current = 0;
+                let step = 0;
+                
+                const timer = setInterval(() => {
+                    step++;
+                    current += increment;
+                    
+                    if (step >= steps) {
+                        clearInterval(timer);
+                        stat.textContent = text; // 최종 값으로 복원
+                    } else {
+                        stat.textContent = text.replace(/\d+/, Math.floor(current).toString());
+                    }
+                }, duration / steps);
+            }
+        });
     }
 });
