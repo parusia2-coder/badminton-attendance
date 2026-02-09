@@ -186,7 +186,7 @@ app.get('/', (c) => {
                 </p>
                 
                 <div class="org-chart">
-                    <!-- 최고 경영진 -->
+                    <!-- 회장 -->
                     <div class="org-level org-top scroll-reveal">
                         <div class="org-card president">
                             <div class="org-icon"><i class="fas fa-crown"></i></div>
@@ -196,7 +196,17 @@ app.get('/', (c) => {
                         </div>
                     </div>
                     
-                    <!-- 감독 및 고문진 -->
+                    <!-- 사무국장 -->
+                    <div class="org-level org-secretary scroll-reveal">
+                        <div class="org-card secretary">
+                            <div class="org-icon"><i class="fas fa-briefcase"></i></div>
+                            <h3>사무국장</h3>
+                            <p class="org-name">미정</p>
+                            <p class="org-role">조직 운영 및 행정 총괄</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 감사 및 고문진 -->
                     <div class="org-level org-advisory scroll-reveal">
                         <div class="org-card auditor">
                             <div class="org-icon"><i class="fas fa-balance-scale"></i></div>
@@ -277,11 +287,6 @@ app.get('/', (c) => {
                     <div class="org-level org-executives scroll-reveal">
                         <h4 class="org-section-title">운영진</h4>
                         <div class="org-exec-grid">
-                            <div class="org-exec-card">
-                                <div class="exec-icon"><i class="fas fa-briefcase"></i></div>
-                                <h4>사무국장</h4>
-                                <p class="exec-name">미정</p>
-                            </div>
                             <div class="org-exec-card">
                                 <div class="exec-icon"><i class="fas fa-file-alt"></i></div>
                                 <h4>총무이사</h4>

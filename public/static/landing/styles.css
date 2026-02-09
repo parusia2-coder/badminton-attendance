@@ -942,6 +942,13 @@ a {
   font-size: 3rem;
 }
 
+.org-card.secretary .org-icon {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  width: 90px;
+  height: 90px;
+  font-size: 2.75rem;
+}
+
 .org-card.auditor .org-icon,
 .org-card.advisors .org-icon {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
