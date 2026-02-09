@@ -76,10 +76,8 @@ app.get('/', (c) => {
                     <li><a href="#organization">조직도</a></li>
                     <li><a href="#schedule">일정안내</a></li>
                     <li><a href="#contact">가입문의</a></li>
-                    <li><a href="https://band.us/band/63922799" target="_blank" rel="noopener noreferrer" class="band-link">
-                        <i class="fas fa-users"></i> 네이버밴드
-                    </a></li>
-                    <li><a href="/admin" class="admin-link"><i class="fas fa-cog"></i> 관리자</a></li>
+                    <li><a href="https://band.us/band/63922799" target="_blank" rel="noopener noreferrer" class="band-link">네이버밴드</a></li>
+                    <li><a href="/admin" class="admin-link">관리자</a></li>
                 </ul>
             </nav>
         </header>
@@ -101,7 +99,7 @@ app.get('/', (c) => {
                     <div class="about-intro">
                         <p class="intro-text">
                             안양시배드민턴협회 장년부는 50대 이상의 배드민턴 애호가들이 모여 만든 
-                            활기차고 건강한 공동체입니다. 1995년 창립 이래, 우리는 단순히 운동을 넘어 
+                            활기차고 건강한 공동체입니다. 우리는 단순히 운동을 넘어 
                             인생의 황금기를 함께 나누는 동료이자 가족으로 성장해왔습니다.
                         </p>
                     </div>
@@ -194,6 +192,7 @@ app.get('/', (c) => {
                         <div class="org-card president">
                             <div class="org-icon"><i class="fas fa-crown"></i></div>
                             <h3>회장</h3>
+                            <p class="org-name">미정</p>
                             <p class="org-role">최고 의사결정자</p>
                         </div>
                     </div>
@@ -203,42 +202,75 @@ app.get('/', (c) => {
                         <div class="org-card auditor">
                             <div class="org-icon"><i class="fas fa-balance-scale"></i></div>
                             <h3>감사</h3>
-                            <p class="org-count">1명</p>
+                            <div class="org-names">
+                                <p class="org-name">• 미정</p>
+                            </div>
                         </div>
                         <div class="org-card advisors">
                             <div class="org-icon"><i class="fas fa-user-tie"></i></div>
                             <h3>고문</h3>
-                            <p class="org-count">3명</p>
+                            <div class="org-names">
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- 부회장단 -->
                     <div class="org-level org-vp scroll-reveal">
-                        <div class="org-card vice-presidents">
+                        <div class="org-card vice-presidents wide">
                             <div class="org-icon"><i class="fas fa-users-cog"></i></div>
                             <h3>부회장</h3>
-                            <p class="org-count">6명</p>
                             <p class="org-role">전략 기획 및 운영 총괄</p>
+                            <div class="org-names-grid">
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- 자문위원 -->
                     <div class="org-level org-consultants scroll-reveal">
-                        <div class="org-card consultants">
+                        <div class="org-card consultants wide">
                             <div class="org-icon"><i class="fas fa-handshake"></i></div>
                             <h3>자문위원</h3>
-                            <p class="org-count">11명</p>
                             <p class="org-role">전문 자문 및 정책 제안</p>
+                            <div class="org-names-grid three-col">
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- 관리이사 -->
                     <div class="org-level org-directors scroll-reveal">
-                        <div class="org-card directors">
+                        <div class="org-card directors wide">
                             <div class="org-icon"><i class="fas fa-clipboard-list"></i></div>
                             <h3>관리이사</h3>
-                            <p class="org-count">7명</p>
                             <p class="org-role">부서별 업무 관리 및 조정</p>
+                            <div class="org-names-grid">
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                                <p class="org-name">• 미정</p>
+                            </div>
                         </div>
                     </div>
                     
@@ -249,27 +281,33 @@ app.get('/', (c) => {
                             <div class="org-exec-card">
                                 <div class="exec-icon"><i class="fas fa-briefcase"></i></div>
                                 <h4>사무국장</h4>
+                                <p class="exec-name">미정</p>
                             </div>
                             <div class="org-exec-card">
                                 <div class="exec-icon"><i class="fas fa-file-alt"></i></div>
                                 <h4>총무이사</h4>
-                                <span class="exec-count">2명</span>
+                                <p class="exec-name">• 미정</p>
+                                <p class="exec-name">• 미정</p>
                             </div>
                             <div class="org-exec-card">
                                 <div class="exec-icon"><i class="fas fa-won-sign"></i></div>
                                 <h4>재무이사</h4>
+                                <p class="exec-name">미정</p>
                             </div>
                             <div class="org-exec-card">
                                 <div class="exec-icon"><i class="fas fa-trophy"></i></div>
                                 <h4>경기이사</h4>
+                                <p class="exec-name">미정</p>
                             </div>
                             <div class="org-exec-card">
                                 <div class="exec-icon"><i class="fas fa-bullhorn"></i></div>
                                 <h4>홍보이사</h4>
+                                <p class="exec-name">미정</p>
                             </div>
                             <div class="org-exec-card">
                                 <div class="exec-icon"><i class="fas fa-camera"></i></div>
                                 <h4>미디어이사</h4>
+                                <p class="exec-name">미정</p>
                             </div>
                         </div>
                     </div>

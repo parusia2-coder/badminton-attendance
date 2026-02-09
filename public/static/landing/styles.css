@@ -96,12 +96,17 @@ a {
 .nav-links .band-link {
   background: #00c73c;
   color: #fff;
-  padding: 0.5rem 1.5rem;
+  padding: 0.5rem 1rem;
   border-radius: 5px;
   transition: background 0.3s ease;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
+  font-size: 1rem;
+}
+
+.nav-links .band-link i {
+  font-size: 0.9rem;
 }
 
 .nav-links .band-link:hover {
@@ -1028,5 +1033,60 @@ a {
   
   .org-stats {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Organization Names */
+.org-name {
+  font-size: 1rem;
+  color: #2c3e50;
+  font-weight: 600;
+  margin: 0.3rem 0;
+}
+
+.org-names {
+  margin-top: 1rem;
+}
+
+.org-names-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.org-names-grid.three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.org-card.wide {
+  min-width: 400px;
+  max-width: 600px;
+}
+
+.exec-name {
+  font-size: 0.9rem;
+  color: #667eea;
+  margin: 0.2rem 0;
+  font-weight: 600;
+}
+
+.exec-count {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .org-names-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .org-names-grid.three-col {
+    grid-template-columns: 1fr;
+  }
+  
+  .org-card.wide {
+    min-width: auto;
+    max-width: 100%;
   }
 }
