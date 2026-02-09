@@ -5308,7 +5308,7 @@ window.showAddHeroImageModal = function() {
   if (!modalContainer) return;
 
   modalContainer.innerHTML = `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
           <h2 class="text-2xl font-bold">히어로 이미지 추가</h2>
@@ -5318,15 +5318,57 @@ window.showAddHeroImageModal = function() {
         </div>
 
         <form id="heroImageForm" class="p-6 space-y-4">
+          <!-- 이미지 URL 입력 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">이미지 URL *</label>
-            <input type="url" name="image_url" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/image.jpg">
-            <p class="text-xs text-gray-500 mt-1">Unsplash, Pexels 등의 무료 이미지 URL을 입력하세요</p>
+            <input 
+              type="url" 
+              id="heroImageUrl"
+              name="image_url" 
+              required 
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
+              placeholder="https://example.com/image.jpg"
+              oninput="updateHeroImagePreview(this.value)"
+            >
+            <p class="text-xs text-gray-500 mt-1">
+              <i class="fas fa-info-circle"></i>
+              Unsplash, Pexels 등의 무료 이미지 URL을 입력하세요
+            </p>
+          </div>
+
+          <!-- 추천 이미지 -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p class="text-sm font-medium text-blue-800 mb-2">
+              <i class="fas fa-lightbulb"></i> 추천 배드민턴 이미지 (Unsplash)
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
+                배드민턴 경기 1
+              </button>
+              <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1920&q=80')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
+                배드민턴 경기 2
+              </button>
+              <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80&auto=format&fit=crop')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
+                배드민턴 코트
+              </button>
+              <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1611371805429-8b5c1b2c34ba?w=1920&q=80')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
+                시니어 스포츠
+              </button>
+            </div>
+          </div>
+
+          <!-- 이미지 미리보기 -->
+          <div id="heroImagePreviewContainer" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-2">미리보기</label>
+            <div class="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+              <img id="heroImagePreview" src="" alt="Preview" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+            </div>
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">제목</label>
-            <input type="text" name="title" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="예: 건강한 노년, 활기찬 황금기">
+            <input type="text" name="title" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="예: 건강한 장년, 활기찬 황금기">
           </div>
 
           <div>
@@ -5373,6 +5415,33 @@ window.showAddHeroImageModal = function() {
       showToast('이미지 추가 실패', 'error');
     }
   });
+};
+
+// 이미지 미리보기 업데이트
+window.updateHeroImagePreview = function(url) {
+  const preview = document.getElementById('heroImagePreview');
+  const container = document.getElementById('heroImagePreviewContainer');
+  
+  if (url && url.startsWith('http')) {
+    preview.src = url;
+    container.classList.remove('hidden');
+    
+    // 이미지 로드 에러 처리
+    preview.onerror = function() {
+      container.classList.add('hidden');
+    };
+  } else {
+    container.classList.add('hidden');
+  }
+};
+
+// 추천 이미지 선택
+window.selectRecommendedImage = function(url) {
+  const input = document.getElementById('heroImageUrl');
+  if (input) {
+    input.value = url;
+    updateHeroImagePreview(url);
+  }
 };
 
 // 히어로 이미지 수정
