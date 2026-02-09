@@ -5318,42 +5318,68 @@ window.showAddHeroImageModal = function() {
         </div>
 
         <form id="heroImageForm" class="p-6 space-y-4">
-          <!-- 이미지 URL 입력 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">이미지 URL *</label>
-            <input 
-              type="url" 
-              id="heroImageUrl"
-              name="image_url" 
-              required 
-              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
-              placeholder="https://example.com/image.jpg"
-              oninput="updateHeroImagePreview(this.value)"
-            >
-            <p class="text-xs text-gray-500 mt-1">
-              <i class="fas fa-info-circle"></i>
-              Unsplash, Pexels 등의 무료 이미지 URL을 입력하세요
-            </p>
+          <!-- 업로드 방식 선택 탭 -->
+          <div class="flex border-b mb-4">
+            <button type="button" onclick="switchUploadTab('file')" id="fileTab" class="flex-1 px-4 py-2 font-medium text-blue-600 border-b-2 border-blue-600">
+              <i class="fas fa-upload mr-2"></i>파일 업로드
+            </button>
+            <button type="button" onclick="switchUploadTab('url')" id="urlTab" class="flex-1 px-4 py-2 font-medium text-gray-500 hover:text-gray-700">
+              <i class="fas fa-link mr-2"></i>URL 입력
+            </button>
           </div>
 
-          <!-- 추천 이미지 -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p class="text-sm font-medium text-blue-800 mb-2">
-              <i class="fas fa-lightbulb"></i> 추천 배드민턴 이미지 (Unsplash)
-            </p>
-            <div class="flex flex-wrap gap-2">
-              <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
-                배드민턴 경기 1
-              </button>
-              <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1920&q=80')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
-                배드민턴 경기 2
-              </button>
-              <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80&auto=format&fit=crop')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
-                배드민턴 코트
-              </button>
-              <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1611371805429-8b5c1b2c34ba?w=1920&q=80')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
-                시니어 스포츠
-              </button>
+          <!-- 파일 업로드 섹션 -->
+          <div id="fileUploadSection">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition cursor-pointer" onclick="document.getElementById('fileInput').click()">
+              <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+              <i class="fas fa-cloud-upload-alt text-6xl text-gray-400 mb-4"></i>
+              <p class="text-lg font-medium text-gray-700 mb-2">클릭하여 이미지 선택</p>
+              <p class="text-sm text-gray-500">또는 파일을 드래그 앤 드롭하세요</p>
+              <p class="text-xs text-gray-400 mt-2">JPG, PNG, WEBP, GIF (최대 10MB)</p>
+            </div>
+            
+            <!-- 업로드 진행률 -->
+            <div id="uploadProgress" class="hidden mt-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">업로드 중...</span>
+                <span id="uploadPercent" class="text-sm font-medium text-blue-600">0%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="uploadBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- URL 입력 섹션 -->
+          <div id="urlInputSection" class="hidden">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">이미지 URL</label>
+              <input 
+                type="url" 
+                id="heroImageUrl"
+                name="image_url_input"
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
+                placeholder="https://example.com/image.jpg"
+                oninput="updateHeroImagePreview(this.value)"
+              >
+            </div>
+
+            <!-- 추천 이미지 -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+              <p class="text-sm font-medium text-blue-800 mb-2">
+                <i class="fas fa-lightbulb"></i> 추천 배드민턴 이미지
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
+                  배드민턴 경기 1
+                </button>
+                <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80&sat=20')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
+                  배드민턴 경기 2
+                </button>
+                <button type="button" onclick="selectRecommendedImage('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1920&q=80&brightness=-10')" class="text-xs bg-white px-3 py-1 rounded hover:bg-blue-100 transition">
+                  배드민턴 경기 3
+                </button>
+              </div>
             </div>
           </div>
 
@@ -5365,6 +5391,9 @@ window.showAddHeroImageModal = function() {
               <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
             </div>
           </div>
+
+          <!-- Hidden field for final image URL -->
+          <input type="hidden" id="finalImageUrl" name="image_url">
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">제목</label>
@@ -5382,7 +5411,7 @@ window.showAddHeroImageModal = function() {
           </div>
 
           <div class="flex gap-3 pt-4">
-            <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+            <button type="submit" id="submitBtn" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
               추가
             </button>
             <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-medium">
@@ -5398,7 +5427,7 @@ window.showAddHeroImageModal = function() {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = {
-      image_url: formData.get('image_url'),
+      image_url: document.getElementById('finalImageUrl').value || formData.get('image_url_input'),
       title: formData.get('title'),
       subtitle: formData.get('subtitle'),
       display_order: parseInt(formData.get('display_order')) || 1
@@ -5440,9 +5469,114 @@ window.selectRecommendedImage = function(url) {
   const input = document.getElementById('heroImageUrl');
   if (input) {
     input.value = url;
+    document.getElementById('finalImageUrl').value = url;
     updateHeroImagePreview(url);
   }
 };
+
+// 업로드 탭 전환
+window.switchUploadTab = function(tab) {
+  const fileTab = document.getElementById('fileTab');
+  const urlTab = document.getElementById('urlTab');
+  const fileSection = document.getElementById('fileUploadSection');
+  const urlSection = document.getElementById('urlInputSection');
+  
+  if (tab === 'file') {
+    fileTab.classList.add('text-blue-600', 'border-blue-600');
+    fileTab.classList.remove('text-gray-500');
+    urlTab.classList.remove('text-blue-600', 'border-blue-600');
+    urlTab.classList.add('text-gray-500');
+    fileSection.classList.remove('hidden');
+    urlSection.classList.add('hidden');
+  } else {
+    urlTab.classList.add('text-blue-600', 'border-blue-600');
+    urlTab.classList.remove('text-gray-500');
+    fileTab.classList.remove('text-blue-600', 'border-blue-600');
+    fileTab.classList.add('text-gray-500');
+    urlSection.classList.remove('hidden');
+    fileSection.classList.add('hidden');
+  }
+};
+
+// 파일 선택 핸들러
+window.handleFileSelect = async function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // 파일 타입 검증
+  if (!file.type.startsWith('image/')) {
+    showToast('이미지 파일만 업로드 가능합니다', 'error');
+    return;
+  }
+  
+  // 파일 크기 검증 (10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('파일 크기는 10MB 이하여야 합니다', 'error');
+    return;
+  }
+  
+  // 미리보기 표시
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('heroImagePreview');
+    const container = document.getElementById('heroImagePreviewContainer');
+    preview.src = e.target.result;
+    container.classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+  
+  // 파일 업로드
+  await uploadFile(file);
+};
+
+// 파일 업로드 함수
+async function uploadFile(file) {
+  const progressDiv = document.getElementById('uploadProgress');
+  const progressBar = document.getElementById('uploadBar');
+  const progressPercent = document.getElementById('uploadPercent');
+  const submitBtn = document.getElementById('submitBtn');
+  
+  progressDiv.classList.remove('hidden');
+  submitBtn.disabled = true;
+  
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axios.post(`${API_BASE}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      onUploadProgress: (progressEvent) => {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        progressBar.style.width = percent + '%';
+        progressPercent.textContent = percent + '%';
+      }
+    });
+    
+    if (response.data.success) {
+      document.getElementById('finalImageUrl').value = response.data.url;
+      showToast('파일 업로드 완료!', 'success');
+      
+      // 미리보기 업데이트
+      setTimeout(() => {
+        const preview = document.getElementById('heroImagePreview');
+        preview.src = response.data.url;
+      }, 500);
+    }
+  } catch (error) {
+    console.error('파일 업로드 오류:', error);
+    showToast('파일 업로드 실패: ' + (error.response?.data?.error || error.message), 'error');
+    progressDiv.classList.add('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    setTimeout(() => {
+      progressDiv.classList.add('hidden');
+      progressBar.style.width = '0%';
+      progressPercent.textContent = '0%';
+    }, 2000);
+  }
+}
 
 // 히어로 이미지 수정
 window.editHeroImage = function(id) {
