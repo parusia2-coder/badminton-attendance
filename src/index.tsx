@@ -469,7 +469,7 @@ app.get('/', (c) => {
             <div class="container">
                 <h2 class="section-title">가입 신청</h2>
                 <p class="section-description">
-                    건강한 노년 생활을 위한 첫 걸음, 지금 시작하세요!
+                    건강한 장년 생활을 위한 첫 걸음, 지금 시작하세요!
                 </p>
                 
                 <!-- 가입 신청 폼 -->

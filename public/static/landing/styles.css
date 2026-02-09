@@ -1518,6 +1518,20 @@ a {
     flex-direction: column;
     gap: 0.75rem;
   }
+
+  /* Join Form Tablet Styles */
+  .join-form-container {
+    padding: 0 1.5rem;
+  }
+
+  .join-form {
+    padding: 2rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1536,5 +1550,37 @@ a {
 
   .day-event {
     font-size: 0.55rem;
+  }
+
+  /* Join Form Mobile Styles */
+  .join-form-container {
+    margin: 0 auto 2rem;
+    padding: 0 1rem;
+  }
+
+  .join-form {
+    padding: 1.5rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
   }
 }
