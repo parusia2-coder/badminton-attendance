@@ -531,14 +531,14 @@ app.get('/', (c) => {
                         <i class="fas fa-map-marker-alt contact-icon"></i>
                         <div>
                             <h4>주소</h4>
-                            <p>경기도 안양시 동안구 평촌대로 123</p>
+                            <p>비산노인종합복지관 5층 배드민턴장</p>
                         </div>
                     </div>
                     <div class="contact-item scroll-reveal">
                         <i class="fas fa-phone contact-icon"></i>
                         <div>
                             <h4>전화</h4>
-                            <p>031-123-4567</p>
+                            <p>사무국장 010-5471-0428</p>
                         </div>
                     </div>
                     <div class="contact-item scroll-reveal">
