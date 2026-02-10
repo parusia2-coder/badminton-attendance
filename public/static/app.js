@@ -536,6 +536,10 @@ function renderMainLayout() {
             <i class="fas fa-images w-6"></i>
             <span class="ml-3">메인이미지</span>
           </a>
+          <a href="#" data-page="popups" class="nav-item flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+            <i class="fas fa-window-maximize w-6"></i>
+            <span class="ml-3">팝업관리</span>
+          </a>
         </nav>
         
         <div class="absolute bottom-0 w-64 p-6">
@@ -669,6 +673,11 @@ async function renderCurrentPage() {
       attachFeesHandlers();
       // 통계 탭 차트 렌더링
       setTimeout(() => renderClubFeeChart(), 100);
+      break;
+    case 'popups':
+      await loadPopups();
+      contentDiv.innerHTML = renderPopupsPage();
+      attachPopupsHandlers();
       break;
   }
 }
@@ -5718,6 +5727,563 @@ window.moveHeroImage = async function(id, direction) {
     showToast('순서 변경 실패', 'error');
   }
 };
+
+// ========================================
+// 팝업 관리
+// ========================================
+
+// 팝업 데이터 로드
+async function loadPopups() {
+  try {
+    const response = await axios.get(`${API_BASE}/popups`);
+    app.data.popups = response.data.popups || [];
+    return app.data.popups;
+  } catch (error) {
+    console.error('팝업 로드 실패:', error);
+    showToast('팝업 로드 실패', 'error');
+    return [];
+  }
+}
+
+// 팝업 페이지 렌더링
+function renderPopupsPage() {
+  const popups = app.data.popups || [];
+  
+  return `
+    <div class="space-y-6">
+      <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">팝업 관리</h1>
+        <button onclick="showAddPopupModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+          <i class="fas fa-plus"></i>
+          팝업 추가
+        </button>
+      </div>
+
+      ${popups.length === 0 ? `
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+          <i class="fas fa-window-maximize text-6xl text-gray-300 mb-4"></i>
+          <p class="text-gray-500 text-lg">등록된 팝업이 없습니다.</p>
+          <p class="text-gray-400 text-sm mt-2">팝업을 추가하여 회원들에게 공지사항을 알려보세요!</p>
+        </div>
+      ` : `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          ${popups.map(popup => `
+            <div class="bg-white rounded-lg shadow-md overflow-hidden ${popup.is_active ? 'border-2 border-green-500' : 'opacity-60'}">
+              ${popup.image_url ? `
+                <div class="h-48 bg-gray-200 overflow-hidden">
+                  <img src="${popup.image_url}" alt="${popup.title}" class="w-full h-full object-cover" />
+                </div>
+              ` : ''}
+              
+              <div class="p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="text-lg font-bold text-gray-800">${popup.title}</h3>
+                  <span class="px-2 py-1 text-xs rounded ${popup.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                    ${popup.is_active ? '활성' : '비활성'}
+                  </span>
+                </div>
+                
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2">${popup.content || '내용 없음'}</p>
+                
+                <div class="text-xs text-gray-500 space-y-1">
+                  <div><i class="fas fa-calendar mr-1"></i> ${popup.start_date} ~ ${popup.end_date}</div>
+                  <div><i class="fas fa-map-marker-alt mr-1"></i> 위치: ${popup.position}</div>
+                  <div><i class="fas fa-expand mr-1"></i> 크기: ${popup.width}px × ${popup.height}px</div>
+                </div>
+                
+                <div class="mt-4 flex gap-2">
+                  <button onclick="editPopup(${popup.id})" class="flex-1 bg-blue-50 text-blue-600 px-3 py-2 rounded hover:bg-blue-100 transition text-sm">
+                    <i class="fas fa-edit mr-1"></i> 수정
+                  </button>
+                  <button onclick="togglePopupStatus(${popup.id}, ${popup.is_active})" class="flex-1 ${popup.is_active ? 'bg-gray-50 text-gray-600 hover:bg-gray-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} px-3 py-2 rounded transition text-sm">
+                    <i class="fas fa-${popup.is_active ? 'eye-slash' : 'eye'} mr-1"></i> ${popup.is_active ? '비활성' : '활성'}
+                  </button>
+                  <button onclick="deletePopup(${popup.id})" class="bg-red-50 text-red-600 px-3 py-2 rounded hover:bg-red-100 transition text-sm">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
+  `;
+}
+
+// 팝업 핸들러 연결
+function attachPopupsHandlers() {
+  // 핸들러가 필요한 경우 여기에 추가
+}
+
+// 팝업 추가 모달
+function showAddPopupModal() {
+  const modalContainer = document.getElementById('modalContainer');
+  
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center p-6 border-b">
+          <h2 class="text-2xl font-bold text-gray-800">팝업 추가</h2>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+        
+        <form id="popupForm" class="p-6 space-y-4">
+          <!-- 탭 -->
+          <div class="flex border-b">
+            <button type="button" onclick="switchPopupTab('upload')" id="uploadTab" class="px-4 py-2 font-medium text-blue-600 border-b-2 border-blue-600">
+              <i class="fas fa-upload mr-2"></i>이미지 업로드
+            </button>
+            <button type="button" onclick="switchPopupTab('url')" id="urlTab" class="px-4 py-2 font-medium text-gray-600 hover:text-blue-600">
+              <i class="fas fa-link mr-2"></i>URL 입력
+            </button>
+          </div>
+          
+          <!-- 이미지 업로드 탭 -->
+          <div id="uploadTabContent" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">팝업 이미지</label>
+              <div id="popupImageDropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition cursor-pointer">
+                <input type="file" id="popupImageFile" accept="image/*" class="hidden" onchange="handlePopupImageUpload(event)" />
+                <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">클릭하거나 파일을 드래그하여 업로드</p>
+                <p class="text-sm text-gray-400 mt-2">JPG, PNG, WEBP, GIF (최대 10MB)</p>
+              </div>
+              
+              <!-- 업로드 진행률 -->
+              <div id="popupUploadProgress" class="hidden mt-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm text-gray-600">업로드 중...</span>
+                  <span id="popupUploadPercent" class="text-sm font-medium text-blue-600">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div id="popupUploadBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+              
+              <!-- 이미지 미리보기 -->
+              <div id="popupImagePreviewContainer" class="mt-4 hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">미리보기</label>
+                <img id="popupImagePreview" class="w-full rounded-lg border border-gray-300" />
+              </div>
+            </div>
+          </div>
+          
+          <!-- URL 입력 탭 -->
+          <div id="urlTabContent" class="space-y-4 hidden">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">이미지 URL</label>
+              <input type="url" id="popupImageUrl" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="https://example.com/image.jpg" oninput="updatePopupImagePreviewFromUrl(this.value)" />
+            </div>
+            
+            <!-- URL 이미지 미리보기 -->
+            <div id="popupUrlImagePreviewContainer" class="hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-2">미리보기</label>
+              <img id="popupUrlImagePreview" class="w-full rounded-lg border border-gray-300" />
+            </div>
+          </div>
+          
+          <input type="hidden" id="finalPopupImageUrl" />
+          
+          <!-- 제목 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">제목 <span class="text-red-500">*</span></label>
+            <input type="text" id="popupTitle" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="팝업 제목을 입력하세요" />
+          </div>
+          
+          <!-- 내용 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">내용</label>
+            <textarea id="popupContent" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="팝업 내용을 입력하세요 (선택사항)"></textarea>
+          </div>
+          
+          <!-- 링크 URL -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">클릭 시 이동할 URL</label>
+            <input type="url" id="popupLinkUrl" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="https://example.com (선택사항)" />
+          </div>
+          
+          <!-- 표시 기간 -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">시작일 <span class="text-red-500">*</span></label>
+              <input type="date" id="popupStartDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">종료일 <span class="text-red-500">*</span></label>
+              <input type="date" id="popupEndDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+          </div>
+          
+          <!-- 위치 및 크기 -->
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">위치</label>
+              <select id="popupPosition" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="center">중앙</option>
+                <option value="top">상단</option>
+                <option value="bottom">하단</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">너비 (px)</label>
+              <input type="number" id="popupWidth" value="500" min="200" max="1200" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">높이 (px)</label>
+              <input type="number" id="popupHeight" value="600" min="200" max="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+          </div>
+          
+          <!-- 활성화 -->
+          <div class="flex items-center">
+            <input type="checkbox" id="popupIsActive" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+            <label for="popupIsActive" class="ml-2 text-sm font-medium text-gray-700">즉시 활성화</label>
+          </div>
+          
+          <div class="flex gap-3 pt-4 border-t">
+            <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+              취소
+            </button>
+            <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              추가
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  modalContainer.classList.remove('hidden');
+  
+  // 오늘 날짜 설정
+  const today = dayjs().format('YYYY-MM-DD');
+  document.getElementById('popupStartDate').value = today;
+  document.getElementById('popupEndDate').value = dayjs().add(7, 'day').format('YYYY-MM-DD');
+  
+  // 드래그 앤 드롭 이벤트
+  const dropZone = document.getElementById('popupImageDropZone');
+  const fileInput = document.getElementById('popupImageFile');
+  
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-blue-500', 'bg-blue-50');
+  });
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+  });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      handlePopupImageUpload({ target: { files: [file] } });
+    }
+  });
+  
+  // 폼 제출
+  document.getElementById('popupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+      title: document.getElementById('popupTitle').value,
+      content: document.getElementById('popupContent').value || null,
+      image_url: document.getElementById('finalPopupImageUrl').value || null,
+      link_url: document.getElementById('popupLinkUrl').value || null,
+      start_date: document.getElementById('popupStartDate').value,
+      end_date: document.getElementById('popupEndDate').value,
+      position: document.getElementById('popupPosition').value,
+      width: parseInt(document.getElementById('popupWidth').value),
+      height: parseInt(document.getElementById('popupHeight').value),
+      is_active: document.getElementById('popupIsActive').checked ? 1 : 0
+    };
+    
+    if (!formData.title) {
+      showToast('제목을 입력해주세요', 'error');
+      return;
+    }
+    
+    try {
+      await axios.post(`${API_BASE}/popups`, formData);
+      showToast('팝업이 추가되었습니다', 'success');
+      closeModal();
+      await loadPopups();
+      document.getElementById('pageContent').innerHTML = renderPopupsPage();
+    } catch (error) {
+      console.error('팝업 추가 오류:', error);
+      showToast('팝업 추가 실패', 'error');
+    }
+  });
+}
+
+// 팝업 탭 전환
+function switchPopupTab(tab) {
+  const uploadTab = document.getElementById('uploadTab');
+  const urlTab = document.getElementById('urlTab');
+  const uploadContent = document.getElementById('uploadTabContent');
+  const urlContent = document.getElementById('urlTabContent');
+  
+  if (tab === 'upload') {
+    uploadTab.classList.add('text-blue-600', 'border-blue-600');
+    uploadTab.classList.remove('text-gray-600');
+    urlTab.classList.remove('text-blue-600', 'border-blue-600');
+    urlTab.classList.add('text-gray-600');
+    
+    uploadContent.classList.remove('hidden');
+    urlContent.classList.add('hidden');
+  } else {
+    urlTab.classList.add('text-blue-600', 'border-blue-600');
+    urlTab.classList.remove('text-gray-600');
+    uploadTab.classList.remove('text-blue-600', 'border-blue-600');
+    uploadTab.classList.add('text-gray-600');
+    
+    urlContent.classList.remove('hidden');
+    uploadContent.classList.add('hidden');
+  }
+}
+
+// 팝업 이미지 업로드 처리
+async function handlePopupImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // 파일 타입 검증
+  if (!file.type.startsWith('image/')) {
+    showToast('이미지 파일만 업로드 가능합니다', 'error');
+    return;
+  }
+  
+  // 파일 크기 검증 (10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('파일 크기는 10MB를 초과할 수 없습니다', 'error');
+    return;
+  }
+  
+  const progressContainer = document.getElementById('popupUploadProgress');
+  const progressBar = document.getElementById('popupUploadBar');
+  const progressPercent = document.getElementById('popupUploadPercent');
+  const previewContainer = document.getElementById('popupImagePreviewContainer');
+  const previewImage = document.getElementById('popupImagePreview');
+  
+  progressContainer.classList.remove('hidden');
+  
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axios.post(`${API_BASE}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      onUploadProgress: (progressEvent) => {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        progressBar.style.width = percent + '%';
+        progressPercent.textContent = percent + '%';
+      }
+    });
+    
+    if (response.data.success) {
+      document.getElementById('finalPopupImageUrl').value = response.data.url;
+      previewImage.src = response.data.url;
+      previewContainer.classList.remove('hidden');
+      showToast('이미지 업로드 완료', 'success');
+    }
+  } catch (error) {
+    console.error('업로드 오류:', error);
+    showToast('이미지 업로드 실패', 'error');
+  } finally {
+    setTimeout(() => {
+      progressContainer.classList.add('hidden');
+      progressBar.style.width = '0%';
+      progressPercent.textContent = '0%';
+    }, 1000);
+  }
+}
+
+// URL 입력 시 미리보기 업데이트
+function updatePopupImagePreviewFromUrl(url) {
+  const previewContainer = document.getElementById('popupUrlImagePreviewContainer');
+  const previewImage = document.getElementById('popupUrlImagePreview');
+  
+  if (url && url.startsWith('http')) {
+    document.getElementById('finalPopupImageUrl').value = url;
+    previewImage.src = url;
+    previewImage.onload = () => {
+      previewContainer.classList.remove('hidden');
+    };
+    previewImage.onerror = () => {
+      previewContainer.classList.add('hidden');
+    };
+  } else {
+    previewContainer.classList.add('hidden');
+  }
+}
+
+// 팝업 수정
+async function editPopup(id) {
+  const popup = app.data.popups.find(p => p.id === id);
+  if (!popup) return;
+  
+  const modalContainer = document.getElementById('modalContainer');
+  
+  modalContainer.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center p-6 border-b">
+          <h2 class="text-2xl font-bold text-gray-800">팝업 수정</h2>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+        
+        <form id="editPopupForm" class="p-6 space-y-4">
+          <!-- 이미지 미리보기 -->
+          ${popup.image_url ? `
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">현재 이미지</label>
+              <img src="${popup.image_url}" class="w-full rounded-lg border border-gray-300 mb-2" />
+            </div>
+          ` : ''}
+          
+          <!-- 이미지 URL -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">이미지 URL</label>
+            <input type="url" id="editPopupImageUrl" value="${popup.image_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="https://example.com/image.jpg" />
+          </div>
+          
+          <!-- 제목 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">제목 <span class="text-red-500">*</span></label>
+            <input type="text" id="editPopupTitle" value="${popup.title}" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          </div>
+          
+          <!-- 내용 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">내용</label>
+            <textarea id="editPopupContent" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">${popup.content || ''}</textarea>
+          </div>
+          
+          <!-- 링크 URL -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">클릭 시 이동할 URL</label>
+            <input type="url" id="editPopupLinkUrl" value="${popup.link_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          </div>
+          
+          <!-- 표시 기간 -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">시작일</label>
+              <input type="date" id="editPopupStartDate" value="${popup.start_date}" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">종료일</label>
+              <input type="date" id="editPopupEndDate" value="${popup.end_date}" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+          </div>
+          
+          <!-- 위치 및 크기 -->
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">위치</label>
+              <select id="editPopupPosition" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="center" ${popup.position === 'center' ? 'selected' : ''}>중앙</option>
+                <option value="top" ${popup.position === 'top' ? 'selected' : ''}>상단</option>
+                <option value="bottom" ${popup.position === 'bottom' ? 'selected' : ''}>하단</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">너비 (px)</label>
+              <input type="number" id="editPopupWidth" value="${popup.width}" min="200" max="1200" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">높이 (px)</label>
+              <input type="number" id="editPopupHeight" value="${popup.height}" min="200" max="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+          </div>
+          
+          <!-- 활성화 -->
+          <div class="flex items-center">
+            <input type="checkbox" id="editPopupIsActive" ${popup.is_active ? 'checked' : ''} class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+            <label for="editPopupIsActive" class="ml-2 text-sm font-medium text-gray-700">활성화</label>
+          </div>
+          
+          <div class="flex gap-3 pt-4 border-t">
+            <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+              취소
+            </button>
+            <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              수정
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  modalContainer.classList.remove('hidden');
+  
+  // 폼 제출
+  document.getElementById('editPopupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+      title: document.getElementById('editPopupTitle').value,
+      content: document.getElementById('editPopupContent').value || null,
+      image_url: document.getElementById('editPopupImageUrl').value || null,
+      link_url: document.getElementById('editPopupLinkUrl').value || null,
+      start_date: document.getElementById('editPopupStartDate').value,
+      end_date: document.getElementById('editPopupEndDate').value,
+      position: document.getElementById('editPopupPosition').value,
+      width: parseInt(document.getElementById('editPopupWidth').value),
+      height: parseInt(document.getElementById('editPopupHeight').value),
+      is_active: document.getElementById('editPopupIsActive').checked ? 1 : 0
+    };
+    
+    try {
+      await axios.put(`${API_BASE}/popups/${id}`, formData);
+      showToast('팝업이 수정되었습니다', 'success');
+      closeModal();
+      await loadPopups();
+      document.getElementById('pageContent').innerHTML = renderPopupsPage();
+    } catch (error) {
+      console.error('팝업 수정 오류:', error);
+      showToast('팝업 수정 실패', 'error');
+    }
+  });
+}
+
+// 팝업 활성화/비활성화 토글
+async function togglePopupStatus(id, currentStatus) {
+  try {
+    await axios.put(`${API_BASE}/popups/${id}`, {
+      is_active: currentStatus ? 0 : 1
+    });
+    showToast(currentStatus ? '팝업이 비활성화되었습니다' : '팝업이 활성화되었습니다', 'success');
+    await loadPopups();
+    document.getElementById('pageContent').innerHTML = renderPopupsPage();
+  } catch (error) {
+    console.error('팝업 상태 변경 오류:', error);
+    showToast('상태 변경 실패', 'error');
+  }
+}
+
+// 팝업 삭제
+async function deletePopup(id) {
+  if (!confirm('정말로 이 팝업을 삭제하시겠습니까?')) return;
+  
+  try {
+    await axios.delete(`${API_BASE}/popups/${id}`);
+    showToast('팝업이 삭제되었습니다', 'success');
+    await loadPopups();
+    document.getElementById('pageContent').innerHTML = renderPopupsPage();
+  } catch (error) {
+    console.error('팝업 삭제 오류:', error);
+    showToast('팝업 삭제 실패', 'error');
+  }
+}
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {

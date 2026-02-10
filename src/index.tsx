@@ -17,6 +17,7 @@ import joinRequestRoutes from './routes/join-requests'
 import heroImageRoutes from './routes/hero-images'
 import statsRoutes from './routes/stats'
 import uploadRoutes from './routes/upload'
+import popupRoutes from './routes/popups'
 
 type Bindings = {
   DB: D1Database
@@ -48,6 +49,7 @@ app.route('/api/fees', feeRoutes)
 app.route('/api/join-requests', joinRequestRoutes)
 app.route('/api/hero-images', heroImageRoutes)
 app.route('/api/stats', statsRoutes)
+app.route('/api/popups', popupRoutes)
 app.route('/api', uploadRoutes)
 
 // Health check

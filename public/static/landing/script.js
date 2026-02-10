@@ -545,3 +545,154 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('calendarDays')) {
         initCalendar();
     }
+
+    // 팝업 로드
+    loadPopups();
+});
+
+// ========================================
+// 팝업 관리
+// ========================================
+
+async function loadPopups() {
+    try {
+        const response = await fetch('/api/popups?status=active');
+        const data = await response.json();
+        
+        if (data.success && data.popups.length > 0) {
+            // 오늘 날짜와 비교하여 표시할 팝업 필터링
+            const today = new Date().toISOString().split('T')[0];
+            const activePopups = data.popups.filter(popup => {
+                return popup.start_date <= today && popup.end_date >= today;
+            });
+            
+            // 각 팝업에 대해 "오늘 하루 보지 않기" 체크
+            activePopups.forEach(popup => {
+                const cookieName = `popup_hide_${popup.id}`;
+                const hideUntil = getCookie(cookieName);
+                
+                if (!hideUntil || new Date(hideUntil) < new Date()) {
+                    // 쿠키가 없거나 만료되었으면 팝업 표시
+                    showPopup(popup);
+                }
+            });
+        }
+    } catch (error) {
+        console.error('팝업 로드 실패:', error);
+    }
+}
+
+function showPopup(popup) {
+    // 팝업 컨테이너 생성
+    const popupContainer = document.createElement('div');
+    popupContainer.id = `popup-${popup.id}`;
+    popupContainer.className = 'popup-overlay';
+    
+    // 위치 클래스 추가
+    let positionClass = '';
+    switch(popup.position) {
+        case 'top':
+            positionClass = 'popup-top';
+            break;
+        case 'bottom':
+            positionClass = 'popup-bottom';
+            break;
+        default:
+            positionClass = 'popup-center';
+    }
+    
+    popupContainer.innerHTML = `
+        <div class="popup-content ${positionClass}" style="width: ${popup.width}px; max-height: ${popup.height}px;">
+            <button class="popup-close" onclick="closePopup(${popup.id})">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="popup-body">
+                ${popup.image_url ? `
+                    ${popup.link_url ? `
+                        <a href="${popup.link_url}" target="_blank">
+                            <img src="${popup.image_url}" alt="${popup.title}" class="popup-image" />
+                        </a>
+                    ` : `
+                        <img src="${popup.image_url}" alt="${popup.title}" class="popup-image" />
+                    `}
+                ` : ''}
+                
+                <div class="popup-text">
+                    <h3 class="popup-title">${popup.title}</h3>
+                    ${popup.content ? `<p class="popup-description">${popup.content}</p>` : ''}
+                    ${popup.link_url && !popup.image_url ? `
+                        <a href="${popup.link_url}" target="_blank" class="popup-link">
+                            자세히 보기 <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div class="popup-footer">
+                <label class="popup-checkbox">
+                    <input type="checkbox" id="hideToday-${popup.id}" />
+                    <span>오늘 하루 보지 않기</span>
+                </label>
+                <button onclick="closePopupWithCheck(${popup.id})" class="popup-close-btn">
+                    닫기
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(popupContainer);
+    
+    // 애니메이션 효과
+    setTimeout(() => {
+        popupContainer.classList.add('active');
+    }, 100);
+    
+    // 오버레이 클릭 시 닫기
+    popupContainer.addEventListener('click', (e) => {
+        if (e.target === popupContainer) {
+            closePopupWithCheck(popup.id);
+        }
+    });
+}
+
+function closePopup(popupId) {
+    const popupContainer = document.getElementById(`popup-${popupId}`);
+    if (popupContainer) {
+        popupContainer.classList.remove('active');
+        setTimeout(() => {
+            popupContainer.remove();
+        }, 300);
+    }
+}
+
+function closePopupWithCheck(popupId) {
+    const checkbox = document.getElementById(`hideToday-${popupId}`);
+    
+    if (checkbox && checkbox.checked) {
+        // 오늘 자정까지 쿠키 설정
+        const tomorrow = new Date();
+        tomorrow.setHours(24, 0, 0, 0);
+        setCookie(`popup_hide_${popupId}`, tomorrow.toISOString(), 1);
+    }
+    
+    closePopup(popupId);
+}
+
+// 쿠키 관리 함수
+function setCookie(name, value, days) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+}
+
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
