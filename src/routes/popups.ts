@@ -193,15 +193,15 @@ app.put('/:id', async (c) => {
       image_url || null,
       html_content || null,
       link_url || null,
-      width,
-      height,
-      position,
+      width || 500,
+      height || 600,
+      position || 'center',
       start_date || null,
       end_date || null,
       is_active !== undefined ? is_active : 1,
-      display_order,
-      show_close_button,
-      show_today_hide,
+      display_order !== undefined ? display_order : 1,
+      show_close_button !== undefined ? show_close_button : 1,
+      show_today_hide !== undefined ? show_today_hide : 1,
       id
     ).run();
 
