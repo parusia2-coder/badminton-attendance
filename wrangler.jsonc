@@ -5,9 +5,15 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "badminton-db-production",
+      "database_id": "6643eb8f-91a5-4bdd-9743-a78d74852253"
+    }
   ]
-  // D1 및 R2 바인딩은 Cloudflare Dashboard에서 설정
-  // 현재는 주석 처리하여 배포 진행
+  // R2 바인딩은 나중에 추가 예정
   // 환경 변수 설정 (SMS 발송):
   // 로컬 개발: .dev.vars 파일에 설정
   // 프로덕션: wrangler secret put 명령어로 설정
