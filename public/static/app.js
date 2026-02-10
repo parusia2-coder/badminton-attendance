@@ -6266,9 +6266,7 @@ async function editPopup(id) {
 // 팝업 활성화/비활성화 토글
 async function togglePopupStatus(id, currentStatus) {
   try {
-    await axios.put(`${API_BASE}/popups/${id}`, {
-      is_active: currentStatus ? 0 : 1
-    });
+    await axios.patch(`${API_BASE}/popups/${id}/toggle`);
     showToast(currentStatus ? '팝업이 비활성화되었습니다' : '팝업이 활성화되었습니다', 'success');
     await loadPopups();
     document.getElementById('pageContent').innerHTML = renderPopupsPage();

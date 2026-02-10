@@ -152,21 +152,29 @@ app.put('/:id', async (c) => {
     const id = c.req.param('id');
     const body = await c.req.json();
 
+    // 현재 팝업 데이터 가져오기
+    const currentPopup = await env.DB.prepare('SELECT * FROM popups WHERE id = ?').bind(id).first();
+    
+    if (!currentPopup) {
+      return c.json({ error: '팝업을 찾을 수 없습니다' }, 404);
+    }
+
+    // 기존 데이터와 병합 (보내지 않은 필드는 기존값 유지)
     const {
-      title,
-      content_type,
-      image_url,
-      html_content,
-      link_url,
-      width,
-      height,
-      position,
-      start_date,
-      end_date,
-      is_active,
-      display_order,
-      show_close_button,
-      show_today_hide
+      title = currentPopup.title,
+      content_type = currentPopup.content_type,
+      image_url = currentPopup.image_url,
+      html_content = currentPopup.html_content,
+      link_url = currentPopup.link_url,
+      width = currentPopup.width,
+      height = currentPopup.height,
+      position = currentPopup.position,
+      start_date = currentPopup.start_date,
+      end_date = currentPopup.end_date,
+      is_active = currentPopup.is_active,
+      display_order = currentPopup.display_order,
+      show_close_button = currentPopup.show_close_button,
+      show_today_hide = currentPopup.show_today_hide
     } = body;
 
     await env.DB.prepare(`
@@ -190,18 +198,18 @@ app.put('/:id', async (c) => {
     `).bind(
       title,
       content_type,
-      image_url || null,
-      html_content || null,
-      link_url || null,
-      width || 500,
-      height || 600,
-      position || 'center',
-      start_date || null,
-      end_date || null,
-      is_active !== undefined ? is_active : 1,
-      display_order !== undefined ? display_order : 1,
-      show_close_button !== undefined ? show_close_button : 1,
-      show_today_hide !== undefined ? show_today_hide : 1,
+      image_url,
+      html_content,
+      link_url,
+      width,
+      height,
+      position,
+      start_date,
+      end_date,
+      is_active,
+      display_order,
+      show_close_button,
+      show_today_hide,
       id
     ).run();
 
