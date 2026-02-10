@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
-                observer.unobserve(entry.target); // 한 번만 실행
+                observer.unobserve(entry.target);
             }
         });
     }, observerOptions);
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetElement = document.querySelector(targetId);
             if (targetElement) {
                 window.scrollTo({
-                    top: targetElement.offsetTop - 80, // 헤더 높이 보정
+                    top: targetElement.offsetTop - 80,
                     behavior: 'smooth'
                 });
             }
@@ -49,21 +49,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 navbar.style.boxShadow = '0 5px 20px rgba(0,0,0,0.1)';
                 navbar.style.padding = '10px 0';
             } else {
-                navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.05)';
+                navbar.style.boxShadow = 'none';
                 navbar.style.padding = '15px 0';
             }
         });
     }
 
-    // 모바일 메뉴 토글
-    const mobileBtn = document.querySelector('.mobile-menu-btn');
-    const navLinks = document.querySelector('.nav-links');
+    // 캘린더 초기화 호출
+    if (document.getElementById('calendarDays')) {
+        initCalendar();
+    }
 
-    if (mobileBtn && navLinks) {
-        mobileBtn.addEventListener('click', () => {
-            const isFlex = navLinks.style.display === 'flex';
-            navLinks.style.display = isFlex ? 'none' : 'flex';
-            if (!isFlex) {
+    // 팝업 로드
+    loadPopups();
+});
                 navLinks.style.flexDirection = 'column';
                 navLinks.style.position = 'absolute';
                 navLinks.style.top = '100%';
@@ -393,7 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
     // 캘린더 초기화
     function initCalendar() {
         let currentDate = new Date();
@@ -541,15 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSchedules();
     }
 
-    // 캘린더 초기화 호출
-    if (document.getElementById('calendarDays')) {
-        initCalendar();
-    }
-
-    // 팝업 로드
-    loadPopups();
-});
-
 // ========================================
 // 팝업 관리
 // ========================================
@@ -559,7 +548,7 @@ async function loadPopups() {
         const response = await fetch('/api/popups?status=active');
         const data = await response.json();
         
-        if (data.success && data.popups.length > 0) {
+        if (data.popups && data.popups.length > 0) {
             // 오늘 날짜와 비교하여 표시할 팝업 필터링
             const today = new Date().toISOString().split('T')[0];
             const activePopups = data.popups.filter(popup => {
