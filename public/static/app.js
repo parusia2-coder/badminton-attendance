@@ -5783,7 +5783,7 @@ function renderPopupsPage() {
                   </span>
                 </div>
                 
-                <p class="text-sm text-gray-600 mb-3 line-clamp-2">${popup.content || '내용 없음'}</p>
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2">${popup.html_content || (popup.content_type === 'image' ? '이미지 팝업' : '내용 없음')}</p>
                 
                 <div class="text-xs text-gray-500 space-y-1">
                   <div><i class="fas fa-calendar mr-1"></i> ${popup.start_date} ~ ${popup.end_date}</div>
@@ -5988,10 +5988,14 @@ function showAddPopupModal() {
   document.getElementById('popupForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const imageUrl = document.getElementById('finalPopupImageUrl').value;
+    const htmlContent = document.getElementById('popupContent').value;
+    
     const formData = {
       title: document.getElementById('popupTitle').value,
-      content: document.getElementById('popupContent').value || null,
-      image_url: document.getElementById('finalPopupImageUrl').value || null,
+      content_type: imageUrl ? 'image' : 'html',
+      image_url: imageUrl || null,
+      html_content: htmlContent || null,
       link_url: document.getElementById('popupLinkUrl').value || null,
       start_date: document.getElementById('popupStartDate').value,
       end_date: document.getElementById('popupEndDate').value,
@@ -6163,7 +6167,7 @@ async function editPopup(id) {
           <!-- 내용 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">내용</label>
-            <textarea id="editPopupContent" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">${popup.content || ''}</textarea>
+            <textarea id="editPopupContent" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">${popup.html_content || ''}</textarea>
           </div>
           
           <!-- 링크 URL -->
@@ -6229,10 +6233,14 @@ async function editPopup(id) {
   document.getElementById('editPopupForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const imageUrl = document.getElementById('editPopupImageUrl').value;
+    const htmlContent = document.getElementById('editPopupContent').value;
+    
     const formData = {
       title: document.getElementById('editPopupTitle').value,
-      content: document.getElementById('editPopupContent').value || null,
-      image_url: document.getElementById('editPopupImageUrl').value || null,
+      content_type: imageUrl ? 'image' : 'html',
+      image_url: imageUrl || null,
+      html_content: htmlContent || null,
       link_url: document.getElementById('editPopupLinkUrl').value || null,
       start_date: document.getElementById('editPopupStartDate').value,
       end_date: document.getElementById('editPopupEndDate').value,

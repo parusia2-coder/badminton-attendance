@@ -608,7 +608,7 @@ function showPopup(popup) {
             </button>
             
             <div class="popup-body">
-                ${popup.image_url ? `
+                ${popup.content_type === 'image' && popup.image_url ? `
                     ${popup.link_url ? `
                         <a href="${popup.link_url}" target="_blank">
                             <img src="${popup.image_url}" alt="${popup.title}" class="popup-image" />
@@ -620,8 +620,8 @@ function showPopup(popup) {
                 
                 <div class="popup-text">
                     <h3 class="popup-title">${popup.title}</h3>
-                    ${popup.content ? `<p class="popup-description">${popup.content}</p>` : ''}
-                    ${popup.link_url && !popup.image_url ? `
+                    ${popup.html_content ? `<div class="popup-description">${popup.html_content}</div>` : ''}
+                    ${popup.link_url && popup.content_type !== 'image' ? `
                         <a href="${popup.link_url}" target="_blank" class="popup-link">
                             자세히 보기 <i class="fas fa-arrow-right ml-1"></i>
                         </a>
