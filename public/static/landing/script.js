@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
-                observer.unobserve(entry.target);
+                observer.unobserve(entry.target); // 한 번만 실행
             }
         });
     }, observerOptions);
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetElement = document.querySelector(targetId);
             if (targetElement) {
                 window.scrollTo({
-                    top: targetElement.offsetTop - 80,
+                    top: targetElement.offsetTop - 80, // 헤더 높이 보정
                     behavior: 'smooth'
                 });
             }
@@ -49,20 +49,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 navbar.style.boxShadow = '0 5px 20px rgba(0,0,0,0.1)';
                 navbar.style.padding = '10px 0';
             } else {
-                navbar.style.boxShadow = 'none';
+                navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.05)';
                 navbar.style.padding = '15px 0';
             }
         });
     }
 
-    // 캘린더 초기화 호출
-    if (document.getElementById('calendarDays')) {
-        initCalendar();
-    }
+    // 모바일 메뉴 토글
+    const mobileBtn = document.querySelector('.mobile-menu-btn');
+    const navLinks = document.querySelector('.nav-links');
 
-    // 팝업 로드
-    loadPopups();
-});
+    if (mobileBtn && navLinks) {
+        mobileBtn.addEventListener('click', () => {
+            const isFlex = navLinks.style.display === 'flex';
+            navLinks.style.display = isFlex ? 'none' : 'flex';
+            if (!isFlex) {
                 navLinks.style.flexDirection = 'column';
                 navLinks.style.position = 'absolute';
                 navLinks.style.top = '100%';
@@ -392,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
     // 캘린더 초기화
     function initCalendar() {
         let currentDate = new Date();
@@ -539,6 +541,14 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSchedules();
     }
 
+    // 캘린더 초기화 호출
+    if (document.getElementById('calendarDays')) {
+        initCalendar();
+    }
+
+    // 팝업 로드
+    loadPopups();
+
 // ========================================
 // 팝업 관리
 // ========================================
@@ -549,19 +559,16 @@ async function loadPopups() {
         const data = await response.json();
         
         if (data.popups && data.popups.length > 0) {
-            // 오늘 날짜와 비교하여 표시할 팝업 필터링
             const today = new Date().toISOString().split('T')[0];
             const activePopups = data.popups.filter(popup => {
                 return popup.start_date <= today && popup.end_date >= today;
             });
             
-            // 각 팝업에 대해 "오늘 하루 보지 않기" 체크
             activePopups.forEach(popup => {
                 const cookieName = `popup_hide_${popup.id}`;
                 const hideUntil = getCookie(cookieName);
                 
                 if (!hideUntil || new Date(hideUntil) < new Date()) {
-                    // 쿠키가 없거나 만료되었으면 팝업 표시
                     showPopup(popup);
                 }
             });
@@ -572,12 +579,10 @@ async function loadPopups() {
 }
 
 function showPopup(popup) {
-    // 팝업 컨테이너 생성
     const popupContainer = document.createElement('div');
     popupContainer.id = `popup-${popup.id}`;
     popupContainer.className = 'popup-overlay';
     
-    // 위치 클래스 추가
     let positionClass = '';
     switch(popup.position) {
         case 'top':
@@ -632,12 +637,10 @@ function showPopup(popup) {
     
     document.body.appendChild(popupContainer);
     
-    // 애니메이션 효과
     setTimeout(() => {
         popupContainer.classList.add('active');
     }, 100);
     
-    // 오버레이 클릭 시 닫기
     popupContainer.addEventListener('click', (e) => {
         if (e.target === popupContainer) {
             closePopupWithCheck(popup.id);
@@ -659,7 +662,6 @@ function closePopupWithCheck(popupId) {
     const checkbox = document.getElementById(`hideToday-${popupId}`);
     
     if (checkbox && checkbox.checked) {
-        // 오늘 자정까지 쿠키 설정
         const tomorrow = new Date();
         tomorrow.setHours(24, 0, 0, 0);
         setCookie(`popup_hide_${popupId}`, tomorrow.toISOString(), 1);
@@ -668,7 +670,6 @@ function closePopupWithCheck(popupId) {
     closePopup(popupId);
 }
 
-// 쿠키 관리 함수
 function setCookie(name, value, days) {
     const expires = new Date();
     expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
