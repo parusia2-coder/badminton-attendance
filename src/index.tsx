@@ -579,7 +579,7 @@ app.get('/admin', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>안양시배드민턴협회 장년부통합관리시스템</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏸</text></svg>">
-        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="/static/styles.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/admin.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
