@@ -28,12 +28,12 @@ app.post('/send', async (c) => {
     // 테스트 모드에서는 성공으로 로그만 저장
     for (const phone of recipientList) {
       await env.DB.prepare(`
-        INSERT INTO sms_logs (recipient_phone, recipient_name, message, status, error_message, sent_at)
+        INSERT INTO sms_logs (recipient, message, sender, status, error_message, sent_at)
         VALUES (?, ?, ?, ?, ?, datetime('now'))
       `).bind(
         phone,
-        null,
         message,
+        '010-0000-0000', // 테스트 발신번호
         'sent',
         null
       ).run()
